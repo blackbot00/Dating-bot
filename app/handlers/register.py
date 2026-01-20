@@ -46,7 +46,7 @@ async def reg_age_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = (update.message.text or "").strip()
 
     if not txt.isdigit():
-        await update.message.reply_text("❌ Age number மட்டும் type பண்ணுங்க.")
+        await update.message.reply_text("❌ Type your Age number.")
         return
 
     age = int(txt)
@@ -69,6 +69,6 @@ async def reg_age_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(
-        "✅ Registration Completed!\n\n💬 நீங்க யாரோட chat பண்ணப்போறீங்க?",
+        "✅ Registration Completed!\n\n💬 Who are you chatting with?",
         reply_markup=choose_chat_kb()
       )
