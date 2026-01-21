@@ -3,8 +3,11 @@ from app.constants import STATES, GENDERS, LANGUAGES, AI_STYLES
 
 def states_kb():
     rows = []
-    for s in STATES:
-        rows.append([InlineKeyboardButton(s, callback_data=f"reg_state:{s}")])
+    for i in range(0, len(STATES), 3):
+        row = []
+        for j in range(i, min(i+3, len(STATES))):
+            row.append(InlineKeyboardButton(STATES[j], callback_data=f"reg_state:{STATES[j]}"))
+        rows.append(row)
     return InlineKeyboardMarkup(rows)
 
 def genders_kb():
