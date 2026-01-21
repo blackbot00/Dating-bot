@@ -45,10 +45,8 @@ def build_bot():
     bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:)"))
 
     # text
-    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text))
-    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_text))
-    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, human_text))
-
+    from app.handlers.router import text_router
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
     return bot
 
 
