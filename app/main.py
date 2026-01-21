@@ -12,7 +12,7 @@ from app.handlers.register import reg_callback, reg_age_text
 from app.handlers.ai_chat import ai_callbacks, ai_text
 from app.handlers.human_chat import human_callbacks, human_text
 from app.handlers.admin import about_cmd, broadcast_cmd, ban_cmd, unban_cmd, warn_cmd, premium_on, premium_off
-
+from app.handlers.router import text_router
 
 def build_bot():
     bot = Application.builder().token(BOT_TOKEN).build()
