@@ -14,9 +14,9 @@ from app.web_server import app as flask_app
 
 from app.handlers.start import start_cmd
 from app.handlers.chat import chat_cmd
-from app.handlers.register import reg_callback, reg_age_text
-from app.handlers.ai_chat import ai_callbacks, ai_text
-from app.handlers.human_chat import human_callbacks, human_text
+from app.handlers.register import reg_callback
+from app.handlers.ai_chat import ai_callbacks
+from app.handlers.human_chat import human_callbacks
 from app.handlers.admin import (
     about_cmd, broadcast_cmd, ban_cmd, unban_cmd, warn_cmd,
     premium_on, premium_off
@@ -57,10 +57,7 @@ def build_bot():
     bot.add_handler(CallbackQueryHandler(ai_callbacks, pattern=r"^(chat_choice:ai|ai_lang:|ai_style:|ai_action:)"))
     bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:)"))
 
-    # registration age input handler (ONLY when step = ASK_AGE)
-    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text))
-
-    # router for all remaining text (AI/human relay)
+    # ✅ ONE AND ONLY text handler (router decides)
     bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
     return bot
