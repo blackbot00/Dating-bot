@@ -1,11 +1,21 @@
 from openai import OpenAI
 from app.config import OPENAI_API_KEY, OPENAI_MODEL
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+_client = None  # lazy init
+
+
+def get_client():
+    global _client
+    if _client is None:
+        if not OPENAI_API_KEY or not OPENAI_API_KEY.startswith("sk-"):
+            raise ValueError("OPENAI_API_KEY missing or invalid in environment variables.")
+        _client = OpenAI(api_key=OPENAI_API_KEY)
+    return _client
+
 
 def build_system_prompt(language: str, style: str):
     # Tamil => Tanglish mode
-    if language.lower() == "tamil":
+    if (language or "").lower() == "tamil":
         lang_instruction = (
             "Speak in Tanglish (Tamil written using English letters). "
             "Example: 'Epdi iruka?', 'Saptiya?', 'Nee romba cute da/di 😄'. "
@@ -35,17 +45,25 @@ def build_system_prompt(language: str, style: str):
         "- Use short natural messages like a real chat.\n"
     )
 
+
 def ai_reply(user_text: str, language: str, style: str) -> str:
+    client = get_client()
     system = build_system_prompt(language, style)
 
-    resp = client.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user_text}
-        ],
-        temperature=0.85,
-        max_tokens=250
-    )
+    model = OPENAI_MODEL or "gpt-4o-mini"
 
-    return resp.choices[0].message.content.strip()
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_text}
+            ],
+            temperature=0.85,
+            max_tokens=250
+        )
+        return resp.choices[0].message.content.strip()
+
+    except Exception as e:
+        # return actual error for debugging (you can hide later)
+        return f"❌ AI Error: {e}"
