@@ -28,37 +28,49 @@ from app.handlers.router import text_router
 def build_bot():
     bot = Application.builder().token(BOT_TOKEN).build()
 
-    # user commands
+    # ✅ User commands
     bot.add_handler(CommandHandler("start", start_cmd))
     bot.add_handler(CommandHandler("chat", chat_cmd))
     bot.add_handler(CommandHandler("ai_on", ai_on_cmd))
     bot.add_handler(CommandHandler("ai_off", ai_off_cmd))
 
     bot.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(
-        "Commands:\n/start - Register\n/chat - Choose Human/AI\n/ai_on - AI Mode ON\n/ai_off - AI Mode OFF\n/help\n/privacy\n/premium"
+        "📌 Commands:\n\n"
+        "✅ /start - Register / Open Menu\n"
+        "💬 /chat - Choose Human / AI\n"
+        "🤖 /ai_on - Turn ON AI Mode\n"
+        "🚫 /ai_off - Turn OFF AI Mode\n"
+        "🔐 /privacy - Privacy Policy\n"
+        "💎 /premium - Premium Plans\n"
+        "❓ /help - Help Menu"
     )))
 
+    # ✅ Privacy
     bot.add_handler(CommandHandler("privacy", lambda u, c: u.message.reply_text(
         "🔐 *Privacy Policy*\n\n"
-        "1️⃣ 🛡️ *Safety first* — Abuse / illegal chat இருந்தால் action எடுக்கப்படும்.\n"
-        "2️⃣ 👀 *Monitoring* — Human chat messages safety purpose-க்கு monitor/log செய்யப்படும்.\n"
-        "3️⃣ 🚫 *No personal info* — Phone, address, OTP share பண்ணாதீங்க.\n"
-        "4️⃣ 🚩 *Report option* — Problem இருந்தா Report press பண்ணுங்க.\n"
-        "5️⃣ 🔒 *Data use* — Registration info match purpose-க்கு மட்டும் use.\n",
+        "1️⃣ 🛡️ *Safety First* — We take user safety seriously.\n"
+        "2️⃣ 😇 *Don't be Misbehave* — Respect others and chat politely.\n"
+        "3️⃣ 🚫 *No Personal Info* — Never share phone, OTP, address, bank details.\n"
+        "4️⃣ 🚩 *Report Option* — Use Report button if someone abuses.\n"
+        "5️⃣ 🔒 *Data Use* — Registration info (state/gender/age) used only for matching.\n",
         parse_mode="Markdown"
     )))
 
+    # ✅ Premium (emojis added)
     bot.add_handler(CommandHandler("premium", lambda u, c: u.message.reply_text(
-        "💎 Premium Plans:\n"
-        "1 Week - ₹10\n"
-        "2 Weeks - ₹19\n"
-        "1 Month - ₹35\n\n"
-        "✅ Premium benefits:\n"
-        "- Unlimited AI chat\n"
-        "- Priority human matching\n"
+        "💎 *Premium Plans*\n\n"
+        "🗓️ 1 Week  — ₹10\n"
+        "🗓️ 2 Weeks — ₹19\n"
+        "🗓️ 1 Month — ₹35\n\n"
+        "✨ *Premium Benefits*\n"
+        "🤖 Unlimited AI Chat\n"
+        "⚡ Priority Human Matching\n"
+        "🛡️ Safer & Faster Experience\n\n"
+        "📌 *Note:* Premium will be enabled soon.\n",
+        parse_mode="Markdown"
     )))
 
-    # admin commands
+    # ✅ Admin commands
     bot.add_handler(CommandHandler("about", about_cmd))
     bot.add_handler(CommandHandler("status", status_cmd))
     bot.add_handler(CommandHandler("premium_on", premium_on))
@@ -68,12 +80,12 @@ def build_bot():
     bot.add_handler(CommandHandler("unban", unban_cmd))
     bot.add_handler(CommandHandler("warn", warn_cmd))
 
-    # callbacks (buttons)
+    # ✅ Callbacks (Inline Buttons)
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
     bot.add_handler(CallbackQueryHandler(ai_callbacks, pattern=r"^(chat_choice:ai|ai_lang:|ai_style:|ai_action:)"))
     bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:)"))
 
-    # ✅ ONE AND ONLY text handler (router decides)
+    # ✅ ONE text router for all normal messages
     bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
     return bot
@@ -87,11 +99,11 @@ def run_flask():
 def main():
     load_dotenv()
 
-    # start web server in separate thread (koyeb health check)
+    # ✅ start web server in separate thread (Koyeb health check)
     t = threading.Thread(target=run_flask, daemon=True)
     t.start()
 
-    # start telegram bot polling
+    # ✅ start telegram bot polling
     bot = build_bot()
     bot.run_polling()
 
