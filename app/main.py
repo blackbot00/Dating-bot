@@ -19,8 +19,9 @@ from app.handlers.ai_chat import ai_callbacks
 from app.handlers.human_chat import human_callbacks
 from app.handlers.admin import (
     about_cmd, broadcast_cmd, ban_cmd, unban_cmd, warn_cmd,
-    premium_on, premium_off
+    premium_on, premium_off, status_cmd
 )
+from app.handlers.ai_commands import ai_on_cmd, ai_off_cmd
 from app.handlers.router import text_router
 
 
@@ -30,21 +31,36 @@ def build_bot():
     # user commands
     bot.add_handler(CommandHandler("start", start_cmd))
     bot.add_handler(CommandHandler("chat", chat_cmd))
+    bot.add_handler(CommandHandler("ai_on", ai_on_cmd))
+    bot.add_handler(CommandHandler("ai_off", ai_off_cmd))
 
     bot.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(
-        "Commands:\n/start - Register\n/chat - Choose Human/AI\n/help\n/privacy\n/premium"
+        "Commands:\n/start - Register\n/chat - Choose Human/AI\n/ai_on - AI Mode ON\n/ai_off - AI Mode OFF\n/help\n/privacy\n/premium"
     )))
 
     bot.add_handler(CommandHandler("privacy", lambda u, c: u.message.reply_text(
-        "Privacy:\nHuman chats are monitored for safety.\nDo not share personal info."
+        "🔐 *Privacy Policy*\n\n"
+        "1️⃣ 🛡️ *Safety first* — Abuse / illegal chat இருந்தால் action எடுக்கப்படும்.\n"
+        "2️⃣ 👀 *Monitoring* — Human chat messages safety purpose-க்கு monitor/log செய்யப்படும்.\n"
+        "3️⃣ 🚫 *No personal info* — Phone, address, OTP share பண்ணாதீங்க.\n"
+        "4️⃣ 🚩 *Report option* — Problem இருந்தா Report press பண்ணுங்க.\n"
+        "5️⃣ 🔒 *Data use* — Registration info match purpose-க்கு மட்டும் use.\n",
+        parse_mode="Markdown"
     )))
 
     bot.add_handler(CommandHandler("premium", lambda u, c: u.message.reply_text(
-        "Premium Plans:\n1 Week - ₹10\n2 Weeks - ₹19\n1 Month - ₹35\n\n(Currently free.)"
+        "💎 Premium Plans:\n"
+        "1 Week - ₹10\n"
+        "2 Weeks - ₹19\n"
+        "1 Month - ₹35\n\n"
+        "✅ Premium benefits:\n"
+        "- Unlimited AI chat\n"
+        "- Priority human matching\n"
     )))
 
     # admin commands
     bot.add_handler(CommandHandler("about", about_cmd))
+    bot.add_handler(CommandHandler("status", status_cmd))
     bot.add_handler(CommandHandler("premium_on", premium_on))
     bot.add_handler(CommandHandler("premium_off", premium_off))
     bot.add_handler(CommandHandler("broadcast", broadcast_cmd))
