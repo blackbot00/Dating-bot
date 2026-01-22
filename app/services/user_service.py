@@ -1,6 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+
 from app.db import users_col, settings_col
 from app.config import PREMIUM_ENABLED, FREE_TRIAL_DAYS
+from app.constants import AI_FREE_PER_DAY
+from app.services.premium_service import user_has_premium
+
 
 def ensure_settings():
     settings_col.update_one(
@@ -9,9 +13,11 @@ def ensure_settings():
         upsert=True
     )
 
+
 def get_settings():
     ensure_settings()
     return settings_col.find_one({"_id": "app"})
+
 
 def ensure_user(user_id: int, name: str, username: str | None):
     ensure_settings()
@@ -41,9 +47,15 @@ def ensure_user(user_id: int, name: str, username: str | None):
         "gender": None,
         "age": None,
         "registered": False,
+
         "ai_mode": False,
         "ai_language": None,
         "ai_style": None,
+
+        # ✅ AI daily limit tracking
+        "ai_daily_count": 0,
+        "ai_daily_date": date.today().isoformat(),
+
         "is_banned": False,
 
         "is_premium": is_premium,
@@ -53,11 +65,13 @@ def ensure_user(user_id: int, name: str, username: str | None):
         "last_active": datetime.utcnow().isoformat()
     })
 
+
 def set_profile(user_id: int, state: str, gender: str, age: int):
     users_col.update_one(
         {"_id": user_id},
         {"$set": {"state": state, "gender": gender, "age": age, "registered": True}}
     )
+
 
 def set_ai_prefs(user_id: int, lang: str | None = None, style: str | None = None, ai_mode: bool | None = None):
     upd = {}
@@ -71,5 +85,46 @@ def set_ai_prefs(user_id: int, lang: str | None = None, style: str | None = None
     if upd:
         users_col.update_one({"_id": user_id}, {"$set": upd})
 
+
 def get_user(user_id: int):
     return users_col.find_one({"_id": user_id})
+
+
+# ✅ AI Daily Limit
+
+def ai_can_send(user_id: int) -> tuple[bool, int]:
+    """
+    Returns (allowed, remaining_free_today)
+    """
+    u = users_col.find_one({"_id": user_id}, {"ai_daily_count": 1, "ai_daily_date": 1})
+    if not u:
+        return True, AI_FREE_PER_DAY
+
+    today = date.today().isoformat()
+    daily_date = u.get("ai_daily_date")
+
+    # reset daily counter if new day
+    if daily_date != today:
+        users_col.update_one(
+            {"_id": user_id},
+            {"$set": {"ai_daily_count": 0, "ai_daily_date": today}}
+        )
+        return True, AI_FREE_PER_DAY
+
+    count = int(u.get("ai_daily_count", 0))
+    remaining = max(AI_FREE_PER_DAY - count, 0)
+
+    # premium users unlimited
+    if user_has_premium(user_id):
+        return True, remaining
+
+    return (count < AI_FREE_PER_DAY), remaining
+
+
+def ai_increment(user_id: int):
+    today = date.today().isoformat()
+    users_col.update_one(
+        {"_id": user_id},
+        {"$inc": {"ai_daily_count": 1}, "$set": {"ai_daily_date": today}},
+        upsert=True
+    )
