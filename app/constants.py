@@ -39,3 +39,6 @@ MIN_AGE = 18
 MAX_AGE = 80
 
 AGE_DIFF_LIMIT = 8
+
+# ✅ AI Free daily limit
+AI_FREE_PER_DAY = 40
