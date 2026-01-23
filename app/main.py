@@ -86,10 +86,13 @@ def build_bot():
     bot.add_handler(CommandHandler("ai_enable", ai_enable_cmd))
     bot.add_handler(CommandHandler("ai_disable", ai_disable_cmd))
 
-    # ✅ Callbacks
+    # ✅ Callbacks (IMPORTANT FIX ✅)
+    # registration callbacks pattern மட்டும் வைத்துக்கோ
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
-    bot.add_handler(CallbackQueryHandler(ai_callbacks, pattern=r"^(chat_choice:ai|ai_lang:.*|ai_style:.*|ai_action:.*)$"))
-    bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:|prev_report|prevrep:)"))
+
+    # AI & Human callbacks pattern remove -> ALWAYS catch buttons
+    bot.add_handler(CallbackQueryHandler(ai_callbacks))
+    bot.add_handler(CallbackQueryHandler(human_callbacks))
 
     # ✅ Media handler
     bot.add_handler(MessageHandler(
