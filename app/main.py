@@ -23,6 +23,8 @@ from app.handlers.admin import (
 )
 from app.handlers.ai_commands import ai_on_cmd, ai_off_cmd
 from app.handlers.router import text_router
+from app.handlers.exit_cmd import exit_cmd
+from app.handlers.profile import edit_profile_cmd
 
 
 def build_bot():
@@ -31,6 +33,9 @@ def build_bot():
     # ✅ User commands
     bot.add_handler(CommandHandler("start", start_cmd))
     bot.add_handler(CommandHandler("chat", chat_cmd))
+    bot.add_handler(CommandHandler("exit", exit_cmd))
+    bot.add_handler(CommandHandler("edit_profile", edit_profile_cmd))
+
     bot.add_handler(CommandHandler("ai_on", ai_on_cmd))
     bot.add_handler(CommandHandler("ai_off", ai_off_cmd))
 
@@ -38,6 +43,8 @@ def build_bot():
         "📌 Commands:\n\n"
         "✅ /start - Register / Open Menu\n"
         "💬 /chat - Choose Human / AI\n"
+        "🛑 /exit - Stop conversation\n"
+        "📝 /edit_profile - Re-register profile\n"
         "🤖 /ai_on - Turn ON AI Mode\n"
         "🚫 /ai_off - Turn OFF AI Mode\n"
         "🔐 /privacy - Privacy Policy\n"
@@ -80,12 +87,12 @@ def build_bot():
     bot.add_handler(CommandHandler("unban", unban_cmd))
     bot.add_handler(CommandHandler("warn", warn_cmd))
 
-    # ✅ Callbacks (Inline Buttons)
+    # ✅ Callbacks
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
     bot.add_handler(CallbackQueryHandler(ai_callbacks, pattern=r"^(chat_choice:ai|ai_lang:|ai_style:|ai_action:)"))
-    bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:)"))
+    bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:|prev_report|prevrep:)"))
 
-    # ✅ Media handler (IMPORTANT)
+    # ✅ Media handler
     bot.add_handler(MessageHandler(
         (filters.PHOTO | filters.VIDEO | filters.Document.ALL | filters.AUDIO | filters.VOICE |
          filters.VIDEO_NOTE | filters.Sticker.ALL | filters.ANIMATION),
