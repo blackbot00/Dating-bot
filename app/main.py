@@ -21,7 +21,7 @@ from app.handlers.admin import (
     about_cmd, broadcast_cmd, ban_cmd, unban_cmd, warn_cmd,
     premium_on, premium_off, status_cmd
 )
-from app.handlers.ai_commands import ai_on_cmd, ai_off_cmd
+from app.handlers.ai_commands import ai_enable_cmd, ai_disable_cmd
 from app.handlers.router import text_router
 from app.handlers.exit_cmd import exit_cmd
 from app.handlers.profile import edit_profile_cmd
@@ -36,17 +36,12 @@ def build_bot():
     bot.add_handler(CommandHandler("exit", exit_cmd))
     bot.add_handler(CommandHandler("edit_profile", edit_profile_cmd))
 
-    bot.add_handler(CommandHandler("ai_on", ai_on_cmd))
-    bot.add_handler(CommandHandler("ai_off", ai_off_cmd))
-
     bot.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(
         "📌 Commands:\n\n"
         "✅ /start - Register / Open Menu\n"
         "💬 /chat - Choose Human / AI\n"
         "🛑 /exit - Stop conversation\n"
         "📝 /edit_profile - Re-register profile\n"
-        "🤖 /ai_on - Turn ON AI Mode\n"
-        "🚫 /ai_off - Turn OFF AI Mode\n"
         "🔐 /privacy - Privacy Policy\n"
         "💎 /premium - Premium Plans\n"
         "❓ /help - Help Menu"
@@ -86,6 +81,10 @@ def build_bot():
     bot.add_handler(CommandHandler("ban", ban_cmd))
     bot.add_handler(CommandHandler("unban", unban_cmd))
     bot.add_handler(CommandHandler("warn", warn_cmd))
+
+    # ✅ AI admin control
+    bot.add_handler(CommandHandler("ai_enable", ai_enable_cmd))
+    bot.add_handler(CommandHandler("ai_disable", ai_disable_cmd))
 
     # ✅ Callbacks
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
