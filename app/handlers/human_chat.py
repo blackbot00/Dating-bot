@@ -1,14 +1,20 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from datetime import datetime
+import re
+
 from app.handlers.common import banned_guard
 from app.keyboard import inchat_kb, choose_again_kb
 from app.services.user_service import get_user
 from app.services.queue_service import add_to_queue, remove_from_queue
 from app.services.match_service import try_match, create_chat, end_chat, get_partner, is_in_chat
 from app.services.log_service import log_group2, log_group1
-from app.db import reports_col
-from datetime import datetime
+from app.db import reports_col, active_chats_col
+from app.config import GROUP2_ID
+
+
+LINK_REGEX = re.compile(r"(https?://|www\.|t\.me/|telegram\.me/)", re.IGNORECASE)
 
 
 def partner_info_text(state: str, age: int) -> str:
@@ -20,6 +26,26 @@ def partner_info_text(state: str, age: int) -> str:
         "🚫 Links are restricted🥸\n"
         "⏱️ Media sharing unlocked after 2 minutes🥸"
     )
+
+
+def get_active_chat_doc(uid: int):
+    return active_chats_col.find_one(
+        {"$or": [{"user1": uid}, {"user2": uid}], "status": "active"}
+    )
+
+
+def is_media_unlocked(chat_doc) -> bool:
+    """
+    Media allowed only after 2 minutes from chat start time.
+    """
+    try:
+        started_at = chat_doc.get("started_at")
+        started = datetime.fromisoformat(started_at)
+    except:
+        return True
+
+    diff = (datetime.utcnow() - started).total_seconds()
+    return diff >= 120  # 2 minutes
 
 
 async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -137,6 +163,12 @@ async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handle TEXT messages.
+    ✅ blocks links
+    ✅ relay normal messages
+    ✅ logs to group2
+    """
     if await banned_guard(update, context):
         return
 
@@ -145,13 +177,62 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not partner_id:
         return
 
-    text = update.message.text
+    text = (update.message.text or "").strip()
+    if not text:
+        return
 
-    # ✅ relay WITHOUT buttons
+    # ✅ block links
+    if LINK_REGEX.search(text):
+        await update.message.reply_text("🚫 Links are restricted🥸")
+        await log_group2(context.bot, f"🚫 LINK BLOCKED\nFrom: {uid}\nText: {text}")
+        return
+
     await context.bot.send_message(chat_id=partner_id, text=text)
 
-    # log to group2
     await log_group2(
         context.bot,
         f"💬 CHAT LOG\nFrom: {uid}\nTo: {partner_id}\nText: {text}"
-            )
+    )
+
+
+async def human_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handle ALL media messages.
+    ✅ lock media for 2 minutes
+    ✅ after 2 minutes relay media
+    ✅ copy media to group2
+    """
+    if await banned_guard(update, context):
+        return
+
+    uid = update.effective_user.id
+    partner_id = get_partner(uid)
+    if not partner_id:
+        return
+
+    chat_doc = get_active_chat_doc(uid)
+    if not chat_doc:
+        return
+
+    # ✅ media locked for first 2 minutes
+    if not is_media_unlocked(chat_doc):
+        await update.message.reply_text("⏱️ Media sharing unlocked after 2 minutes🥸")
+        await log_group2(context.bot, f"⏱️ MEDIA BLOCKED\nFrom: {uid}\nTo: {partner_id}")
+        return
+
+    # ✅ relay media to partner
+    try:
+        await update.message.copy(chat_id=partner_id)
+    except Exception as e:
+        await update.message.reply_text("❌ Failed to send media. Try again.")
+        await log_group2(context.bot, f"❌ MEDIA RELAY ERROR\nFrom: {uid}\nTo: {partner_id}\nError: {e}")
+        return
+
+    # ✅ copy same media to group2 for monitoring
+    try:
+        if GROUP2_ID:
+            await update.message.copy(chat_id=GROUP2_ID)
+    except:
+        pass
+
+    await log_group2(context.bot, f"📎 MEDIA LOG\nFrom: {uid}\nTo: {partner_id}")
