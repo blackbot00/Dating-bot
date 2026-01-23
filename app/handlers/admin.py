@@ -12,10 +12,13 @@ from app.services.log_service import log_group1
 
 START_TIME = time.time()
 
+ADMIN_ONLY_MSG = "🚫 This command is for Admin only 🥸"
+
 
 async def about_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
     await update.message.reply_text("👑 Owner panel active. Bot running ✅")
 
@@ -23,6 +26,7 @@ async def about_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
 
     user_count = users_col.count_documents({})
@@ -55,6 +59,7 @@ async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def premium_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
     set_premium_enabled(True)
     await update.message.reply_text("✅ Premium Enabled")
@@ -64,6 +69,7 @@ async def premium_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def premium_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
     set_premium_enabled(False)
     await update.message.reply_text("✅ Premium Disabled")
@@ -73,6 +79,7 @@ async def premium_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
 
     if not context.args:
@@ -95,6 +102,7 @@ async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
 
     if not context.args:
@@ -112,6 +120,7 @@ async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
 
     if not context.args:
@@ -128,6 +137,7 @@ async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
+        await update.message.reply_text(ADMIN_ONLY_MSG)
         return
 
     if len(context.args) < 2:
