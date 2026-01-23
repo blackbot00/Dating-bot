@@ -65,24 +65,23 @@ async def ai_off_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🚫 AI mode is controlled by Admin 🥸")
 
 
-# ✅ helper for AI callbacks
-async def start_ai_flow_from_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+# ✅ helper for AI callbacks (FIXED ✅)
+async def start_ai_flow_from_button(message, uid: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
     """
     Called when user clicks AI button.
-    Returns True if AI is allowed and flow can continue.
+    message = CallbackQuery.message
     """
-    uid = update.effective_user.id
     u = get_user(uid)
 
     if not u or not u.get("registered"):
-        await update.message.reply_text("❌ First register using /start")
+        await message.reply_text("❌ First register using /start")
         return False
 
     if not ai_is_enabled():
-        await update.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+        await message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
         return False
 
     # force choose language again
     set_ai_prefs(uid, ai_mode=False)
-    await update.message.reply_text("🌐 Select language:", reply_markup=ai_language_kb())
+    await message.reply_text("🌐 Select language:", reply_markup=ai_language_kb())
     return True
