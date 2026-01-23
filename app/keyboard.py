@@ -28,11 +28,20 @@ def choose_chat_kb():
 
 
 def choose_again_kb():
-    # ✅ after partner left / ended
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🚩 Previous chat report", callback_data="prev_report")],
         [InlineKeyboardButton("👤 Human", callback_data="chat_choice:human"),
          InlineKeyboardButton("🤖 AI", callback_data="chat_choice:ai")]
+    ])
+
+
+def prev_report_reason_kb():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🚫 Abuse", callback_data="prevrep:abuse")],
+        [InlineKeyboardButton("🔞 Adult content", callback_data="prevrep:adult")],
+        [InlineKeyboardButton("🧨 Scam / Fraud", callback_data="prevrep:scam")],
+        [InlineKeyboardButton("🤢 Harassment", callback_data="prevrep:harass")],
+        [InlineKeyboardButton("❌ Cancel", callback_data="prevrep:cancel")]
     ])
 
 
