@@ -22,8 +22,7 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ✅ user chooses AI mode
     if q.data == "chat_choice:ai":
-        # admin global control
-        await start_ai_flow_from_button(q.message, context)
+        await start_ai_flow_from_button(q.message, uid, context)
         return
 
     # ✅ language set
