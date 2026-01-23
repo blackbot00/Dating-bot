@@ -16,7 +16,7 @@ from app.handlers.start import start_cmd
 from app.handlers.chat import chat_cmd
 from app.handlers.register import reg_callback
 from app.handlers.ai_chat import ai_callbacks
-from app.handlers.human_chat import human_callbacks
+from app.handlers.human_chat import human_callbacks, human_media
 from app.handlers.admin import (
     about_cmd, broadcast_cmd, ban_cmd, unban_cmd, warn_cmd,
     premium_on, premium_off, status_cmd
@@ -56,7 +56,7 @@ def build_bot():
         parse_mode="Markdown"
     )))
 
-    # ✅ Premium (emojis added)
+    # ✅ Premium
     bot.add_handler(CommandHandler("premium", lambda u, c: u.message.reply_text(
         "💎 *Premium Plans*\n\n"
         "🗓️ 1 Week  — ₹10\n"
@@ -85,7 +85,14 @@ def build_bot():
     bot.add_handler(CallbackQueryHandler(ai_callbacks, pattern=r"^(chat_choice:ai|ai_lang:|ai_style:|ai_action:)"))
     bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:)"))
 
-    # ✅ ONE text router for all normal messages
+    # ✅ Media handler (IMPORTANT)
+    bot.add_handler(MessageHandler(
+        (filters.PHOTO | filters.VIDEO | filters.Document.ALL | filters.AUDIO | filters.VOICE |
+         filters.VIDEO_NOTE | filters.Sticker.ALL | filters.ANIMATION),
+        human_media
+    ))
+
+    # ✅ Text router
     bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
     return bot
@@ -99,11 +106,9 @@ def run_flask():
 def main():
     load_dotenv()
 
-    # ✅ start web server in separate thread (Koyeb health check)
     t = threading.Thread(target=run_flask, daemon=True)
     t.start()
 
-    # ✅ start telegram bot polling
     bot = build_bot()
     bot.run_polling()
 
