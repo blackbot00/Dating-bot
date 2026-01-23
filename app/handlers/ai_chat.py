@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.keyboard import ai_language_kb, ai_style_kb, ai_exit_kb, choose_chat_kb
+from app.keyboard import ai_style_kb, ai_exit_kb, choose_chat_kb
 from app.services.user_service import (
     set_ai_prefs, get_user,
     ai_can_send, ai_increment
@@ -9,6 +9,7 @@ from app.services.user_service import (
 from app.services.premium_service import user_has_premium
 from app.openai_client import ai_reply
 from app.handlers.common import banned_guard
+from app.handlers.ai_commands import ai_is_enabled, start_ai_flow_from_button
 
 
 async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -19,13 +20,18 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     uid = q.from_user.id
 
-    # user chooses AI mode
+    # ✅ user chooses AI mode
     if q.data == "chat_choice:ai":
-        await q.message.reply_text("🌐 Select language:", reply_markup=ai_language_kb())
+        # admin global control
+        await start_ai_flow_from_button(q.message, context)
         return
 
-    # language set
+    # ✅ language set
     if q.data.startswith("ai_lang:"):
+        if not ai_is_enabled():
+            await q.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+            return
+
         lang = q.data.split(":", 1)[1]
         set_ai_prefs(uid, lang=lang)
 
@@ -35,8 +41,12 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # style set & enable ai mode
+    # ✅ style set & enable ai mode
     if q.data.startswith("ai_style:"):
+        if not ai_is_enabled():
+            await q.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+            return
+
         style = q.data.split(":", 1)[1]
         set_ai_prefs(uid, style=style, ai_mode=True)
 
@@ -47,7 +57,7 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # exit ai mode
+    # ✅ exit ai mode
     if q.data == "ai_action:exit":
         set_ai_prefs(uid, ai_mode=False)
         await q.message.reply_text(
@@ -64,15 +74,20 @@ async def ai_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     u = get_user(uid)
 
-    # only respond if AI mode ON
+    # respond only if AI mode ON
     if not u or not u.get("ai_mode"):
+        return
+
+    # ✅ admin global AI switch
+    if not ai_is_enabled():
+        await update.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
         return
 
     allowed, remaining = ai_can_send(uid)
     if not allowed:
         await update.message.reply_text(
             "🚫 *Today's free AI limit reached* (40/day)\n\n"
-            "💎 Premium வாங்கினா unlimited AI chat கிடைக்கும்.\n"
+            "💎 Premium users get unlimited AI chat.\n"
             "Use /premium",
             parse_mode="Markdown"
         )
@@ -99,6 +114,6 @@ async def ai_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # show remaining notice (free users)
     if (not user_has_premium(uid)) and remaining <= 5:
-        reply += f"\n\n⚠️ Free AI remaining today: {max(remaining-1,0)}/40"
+        reply += f"\n\n⚠️ Free AI remaining today: {max(remaining - 1, 0)}/40"
 
     await update.message.reply_text(reply, reply_markup=ai_exit_kb())
