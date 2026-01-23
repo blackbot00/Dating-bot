@@ -88,7 +88,7 @@ def build_bot():
 
     # ✅ Callbacks
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
-    bot.add_handler(CallbackQueryHandler(ai_callbacks, pattern=r"^(chat_choice:ai|ai_lang:|ai_style:|ai_action:)"))
+    bot.add_handler(CallbackQueryHandler(ai_callbacks, pattern=r"^(chat_choice:ai|ai_lang:.*|ai_style:.*|ai_action:.*)$"))
     bot.add_handler(CallbackQueryHandler(human_callbacks, pattern=r"^(chat_choice:human|chat_action:|prev_report|prevrep:)"))
 
     # ✅ Media handler
