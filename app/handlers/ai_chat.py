@@ -17,53 +17,74 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     q = update.callback_query
-    await q.answer()
     uid = q.from_user.id
 
-    # ✅ user chooses AI mode
-    if q.data == "chat_choice:ai":
-        await start_ai_flow_from_button(q.message, uid, context)
-        return
+    # ✅ always answer callback (remove loading)
+    try:
+        await q.answer()
+    except:
+        pass
 
-    # ✅ language set
-    if q.data.startswith("ai_lang:"):
-        if not ai_is_enabled():
-            await q.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+    # ✅ DEBUG: print data in logs
+    try:
+        print("AI CALLBACK:", q.data, "FROM:", uid)
+    except:
+        pass
+
+    try:
+        # ✅ user chooses AI mode
+        if q.data == "chat_choice:ai":
+            ok = await start_ai_flow_from_button(q.message, uid, context)
+            if not ok:
+                return
             return
 
-        lang = q.data.split(":", 1)[1]
-        set_ai_prefs(uid, lang=lang)
+        # ✅ language set
+        if q.data.startswith("ai_lang:"):
+            if not ai_is_enabled():
+                await q.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+                return
 
-        await q.message.reply_text(
-            f"✅ Language set: {lang}\n\n💖 Select AI style:",
-            reply_markup=ai_style_kb()
-        )
-        return
+            lang = q.data.split(":", 1)[1]
+            set_ai_prefs(uid, lang=lang)
 
-    # ✅ style set & enable ai mode
-    if q.data.startswith("ai_style:"):
-        if not ai_is_enabled():
-            await q.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+            await q.message.reply_text(
+                f"✅ Language set: {lang}\n\n💖 Select AI style:",
+                reply_markup=ai_style_kb()
+            )
             return
 
-        style = q.data.split(":", 1)[1]
-        set_ai_prefs(uid, style=style, ai_mode=True)
+        # ✅ style set & enable ai mode
+        if q.data.startswith("ai_style:"):
+            if not ai_is_enabled():
+                await q.message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+                return
 
-        u = get_user(uid)
-        await q.message.reply_text(
-            f"✅ AI Mode ON!\nLanguage: {u.get('ai_language')}\nStyle: {style}\n\nNow message me 🥰",
-            reply_markup=ai_exit_kb()
-        )
-        return
+            style = q.data.split(":", 1)[1]
+            set_ai_prefs(uid, style=style, ai_mode=True)
 
-    # ✅ exit ai mode
-    if q.data == "ai_action:exit":
-        set_ai_prefs(uid, ai_mode=False)
-        await q.message.reply_text(
-            "✅ AI chat exited.\n\nChoose again:",
-            reply_markup=choose_chat_kb()
-        )
-        return
+            u = get_user(uid) or {}
+            await q.message.reply_text(
+                f"✅ AI Mode ON!\nLanguage: {u.get('ai_language')}\nStyle: {style}\n\nNow message me 🥰",
+                reply_markup=ai_exit_kb()
+            )
+            return
+
+        # ✅ exit ai mode
+        if q.data == "ai_action:exit":
+            set_ai_prefs(uid, ai_mode=False)
+            await q.message.reply_text(
+                "✅ AI chat exited.\n\nChoose again:",
+                reply_markup=choose_chat_kb()
+            )
+            return
+
+    except Exception as e:
+        # ✅ show real error (so no silent fail)
+        try:
+            await q.message.reply_text(f"❌ AI Callback Error:\n{e}")
+        except:
+            pass
 
 
 async def ai_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -105,7 +126,10 @@ async def ai_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         pass
 
-    reply = ai_reply(user_text, lang, style)
+    try:
+        reply = ai_reply(user_text, lang, style)
+    except Exception as e:
+        reply = f"❌ AI Error:\n{e}"
 
     # increment only if not error
     if not reply.startswith("❌ AI Error"):
