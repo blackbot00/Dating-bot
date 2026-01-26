@@ -1,13 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-
 from app.handlers.common import banned_guard
-from app.db import users_col, user_state_col
-from app.states import ASK_STATE
+from app.services.user_service import get_user
 from app.keyboard import states_kb
-from app.services.queue_service import remove_from_queue
-from app.services.match_service import end_chat
-from app.services.user_service import set_ai_prefs
+from app.services.log_service import log_group1
 
 
 async def edit_profile_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -15,26 +11,22 @@ async def edit_profile_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     uid = update.effective_user.id
+    u = get_user(uid)
 
-    # stop everything
-    remove_from_queue(uid)
-    end_chat(uid)
-    set_ai_prefs(uid, ai_mode=False)
-
-    # reset profile
-    users_col.update_one(
-        {"_id": uid},
-        {"$set": {"state": None, "gender": None, "age": None, "registered": False}}
-    )
-
-    # restart registration
-    user_state_col.update_one(
-        {"_id": uid},
-        {"$set": {"step": ASK_STATE, "temp": {}}},
-        upsert=True
-    )
+    if not u or not u.get("registered"):
+        await update.message.reply_text("❌ Complete registration first using /start")
+        return
 
     await update.message.reply_text(
-        "✅ Profile reset done.\n\n📍 Select your State:",
-        reply_markup=states_kb()
+        "✏️ *Edit Profile*\n\nSelect what you want to update:\n\n"
+        "📍 State\n"
+        "👤 Gender\n"
+        "🔢 Age\n"
+        "⭐ Preferences (Premium)",
+        parse_mode="Markdown"
+    )
+
+    await log_group1(
+        context.bot,
+        f"✏️ PROFILE EDIT\nUser: {uid}\nFields: Requested edit menu"
     )
