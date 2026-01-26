@@ -2,13 +2,20 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from app.constants import STATES, AI_STYLES
 
 
+# ---------- Registration ----------
+
 def states_kb():
     rows = []
     for i in range(0, len(STATES), 3):
-        rows.append([
-            InlineKeyboardButton(STATES[j], callback_data=f"reg_state:{STATES[j]}")
-            for j in range(i, min(i + 3, len(STATES)))
-        ])
+        row = []
+        for j in range(i, min(i + 3, len(STATES))):
+            row.append(
+                InlineKeyboardButton(
+                    STATES[j],
+                    callback_data=f"reg_state:{STATES[j]}"
+                )
+            )
+        rows.append(row)
     return InlineKeyboardMarkup(rows)
 
 
@@ -19,6 +26,8 @@ def genders_kb():
         [InlineKeyboardButton("Transgender", callback_data="reg_gender:Transgender")]
     ])
 
+
+# ---------- Main Chat Choice ----------
 
 def choose_chat_kb():
     return InlineKeyboardMarkup([
@@ -39,6 +48,8 @@ def choose_again_kb():
     ])
 
 
+# ---------- Previous Report ----------
+
 def prev_report_reason_kb():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🚫 Abuse", callback_data="prevrep:abuse")],
@@ -48,6 +59,41 @@ def prev_report_reason_kb():
         [InlineKeyboardButton("❌ Cancel", callback_data="prevrep:cancel")]
     ])
 
+
+# ---------- AI CHAT ----------
+
+def ai_language_kb():
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("Tamil", callback_data="ai_lang:Tamil"),
+            InlineKeyboardButton("English", callback_data="ai_lang:English")
+        ],
+        [
+            InlineKeyboardButton("Hindi", callback_data="ai_lang:Hindi"),
+            InlineKeyboardButton("Telugu", callback_data="ai_lang:Telugu")
+        ]
+    ])
+
+
+def ai_style_kb():
+    rows = []
+    for style in AI_STYLES:
+        rows.append([
+            InlineKeyboardButton(
+                style,
+                callback_data=f"ai_style:{style}"
+            )
+        ])
+    return InlineKeyboardMarkup(rows)
+
+
+def ai_exit_kb():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("❌ Exit AI Chat", callback_data="ai_action:exit")]
+    ])
+
+
+# ---------- Human Chat ----------
 
 def inchat_kb():
     return InlineKeyboardMarkup([
