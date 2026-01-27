@@ -3,7 +3,6 @@ from telegram.ext import ContextTypes
 
 from app.keyboard import (
     ai_style_kb,
-    ai_language_kb,
     choose_chat_kb
 )
 from app.services.user_service import (
@@ -29,7 +28,6 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     uid = q.from_user.id
 
-    # stop loading animation
     try:
         await q.answer()
     except:
@@ -37,22 +35,14 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ---------------- AI START ----------------
     if q.data == "chat_choice:ai":
-        ok = await start_ai_flow_from_button(q.message, uid, context)
-        if not ok:
-            return
-
-        await q.message.reply_text(
-            "💬 Choose your language:",
-            reply_markup=ai_language_kb()
-        )
+        # ✅ language keyboard handled ONLY here
+        await start_ai_flow_from_button(q.message, uid, context)
         return
 
     # ---------------- LANGUAGE ----------------
     if q.data.startswith("ai_lang:"):
         if not ai_is_enabled():
-            await q.message.reply_text(
-                "🚫 AI chat is temporarily disabled."
-            )
+            await q.message.reply_text("🚫 AI chat is temporarily disabled.")
             return
 
         lang = q.data.split(":", 1)[1]
@@ -68,9 +58,7 @@ async def ai_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ---------------- STYLE ----------------
     if q.data.startswith("ai_style:"):
         if not ai_is_enabled():
-            await q.message.reply_text(
-                "🚫 AI chat is temporarily disabled."
-            )
+            await q.message.reply_text("🚫 AI chat is temporarily disabled.")
             return
 
         style = q.data.split(":", 1)[1]
@@ -109,15 +97,11 @@ async def ai_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     u = get_user(uid)
 
-    # AI mode OFF → ignore
     if not u or not u.get("ai_mode"):
         return
 
-    # AI disabled by admin
     if not ai_is_enabled():
-        await update.message.reply_text(
-            "🚫 AI chat is temporarily disabled."
-        )
+        await update.message.reply_text("🚫 AI chat is temporarily disabled.")
         return
 
     allowed, remaining = ai_can_send(uid)
@@ -134,7 +118,6 @@ async def ai_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user_text:
         return
 
-    # typing effect
     try:
         await context.bot.send_chat_action(
             chat_id=update.effective_chat.id,
@@ -156,7 +139,6 @@ async def ai_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not reply.startswith("❌"):
         ai_increment(uid)
 
-    # free limit warning
     if (not user_has_premium(uid)) and remaining != -1 and remaining <= 5:
         reply += f"\n\n⚠️ Free AI left today: {max(remaining - 1, 0)}"
 
