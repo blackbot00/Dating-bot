@@ -1,19 +1,21 @@
 import os
 import time
 import psutil
+from datetime import datetime, timedelta
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.security import is_owner
 from app.db import users_col, queue_col, active_chats_col
-from app.services.premium_service import set_premium_enabled
 from app.services.log_service import log_group1
 
 START_TIME = time.time()
 
 ADMIN_ONLY_MSG = "🚫 This command is for Admin only 🥸"
 
+
+# ---------------- Owner Info ----------------
 
 async def about_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -22,6 +24,8 @@ async def about_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("👑 Owner panel active. Bot running ✅")
 
+
+# ---------------- Status ----------------
 
 async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -56,25 +60,71 @@ async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def premium_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ---------------- 🎁 GIVEAWAY PREMIUM ----------------
+
+async def giveaway_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if not is_owner(uid):
         await update.message.reply_text(ADMIN_ONLY_MSG)
         return
-    set_premium_enabled(True)
-    await update.message.reply_text("✅ Premium Enabled")
-    await log_group1(context.bot, "⚙️ Premium Enabled by Owner")
 
-
-async def premium_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    if not is_owner(uid):
-        await update.message.reply_text(ADMIN_ONLY_MSG)
+    if not context.args:
+        await update.message.reply_text("Usage: /giveaway <user_id>")
         return
-    set_premium_enabled(False)
-    await update.message.reply_text("✅ Premium Disabled")
-    await log_group1(context.bot, "⚙️ Premium Disabled by Owner")
 
+    try:
+        target_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ Invalid user ID")
+        return
+
+    user = users_col.find_one({"_id": target_id})
+    if not user:
+        await update.message.reply_text("❌ User not found")
+        return
+
+    # ✅ Activate premium for 7 days
+    valid_till = datetime.utcnow() + timedelta(days=7)
+
+    users_col.update_one(
+        {"_id": target_id},
+        {"$set": {
+            "is_premium": True,
+            "premium_until": valid_till.isoformat()
+        }}
+    )
+
+    # 🎉 Message to USER
+    try:
+        await context.bot.send_message(
+            chat_id=target_id,
+            text=(
+                "🎉 *Surprise!*\n\n"
+                "You got *Premium access* 💎\n"
+                f"⏳ Valid till: `{valid_till.date()}`\n\n"
+                "✨ Enjoy unlimited AI 🤖 & priority chat 💬"
+            ),
+            parse_mode="Markdown"
+        )
+    except:
+        pass
+
+    # ✅ Message to ADMIN
+    await update.message.reply_text(
+        "🎉 Premium Activated!\n\n"
+        f"👤 User ID: `{target_id}`\n"
+        f"⏳ Valid till: `{valid_till.date()}`",
+        parse_mode="Markdown"
+    )
+
+    # 📌 Log
+    await log_group1(
+        context.bot,
+        f"🎁 GIVEAWAY PREMIUM\nUser: {target_id}\nValid till: {valid_till.date()}"
+    )
+
+
+# ---------------- Broadcast ----------------
 
 async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -89,6 +139,7 @@ async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = " ".join(context.args)
     users = users_col.find({}, {"_id": 1})
     sent = 0
+
     for u in users:
         try:
             await context.bot.send_message(chat_id=u["_id"], text=f"📢 Broadcast:\n\n{msg}")
@@ -98,6 +149,8 @@ async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"✅ Broadcast sent to {sent} users")
 
+
+# ---------------- Ban / Unban / Warn ----------------
 
 async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -111,9 +164,10 @@ async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     target = int(context.args[0])
     reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason"
-    users_col.update_one({"_id": target}, {"$set": {"is_banned": True}})
 
+    users_col.update_one({"_id": target}, {"$set": {"is_banned": True}})
     await update.message.reply_text(f"✅ Banned {target}")
+
     await log_group1(context.bot, f"🚫 BAN\nUser: {target}\nReason: {reason}")
 
 
@@ -148,7 +202,10 @@ async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = " ".join(context.args[1:])
 
     try:
-        await context.bot.send_message(chat_id=target, text=f"⚠️ Warning from Admin:\n\n{msg}")
+        await context.bot.send_message(
+            chat_id=target,
+            text=f"⚠️ Warning from Admin:\n\n{msg}"
+        )
     except:
         pass
 
