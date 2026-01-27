@@ -29,13 +29,13 @@ def set_ai_enabled(value: bool):
     settings_col.update_one({"_id": "app"}, {"$set": {"ai_enabled": value}})
 
 
-# ✅ Admin Only Commands
+# ---------------- ADMIN COMMANDS ----------------
+
 async def ai_enable_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await banned_guard(update, context):
         return
 
-    uid = update.effective_user.id
-    if not is_owner(uid):
+    if not is_owner(update.effective_user.id):
         await update.message.reply_text(ADMIN_ONLY_MSG)
         return
 
@@ -47,29 +47,19 @@ async def ai_disable_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await banned_guard(update, context):
         return
 
-    uid = update.effective_user.id
-    if not is_owner(uid):
+    if not is_owner(update.effective_user.id):
         await update.message.reply_text(ADMIN_ONLY_MSG)
         return
 
     set_ai_enabled(False)
-    await update.message.reply_text("✅ AI chat disabled")
+    await update.message.reply_text("🚫 AI chat disabled")
 
 
-# ❌ User commands blocked
-async def ai_on_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🚫 AI mode is controlled by Admin 🥸")
+# ---------------- AI FLOW START ----------------
 
-
-async def ai_off_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🚫 AI mode is controlled by Admin 🥸")
-
-
-# ✅ helper for AI callbacks (FIXED ✅)
 async def start_ai_flow_from_button(message, uid: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
     """
-    Called when user clicks AI button.
-    message = CallbackQuery.message
+    This is the ONLY place where language keyboard is shown
     """
     u = get_user(uid)
 
@@ -78,10 +68,14 @@ async def start_ai_flow_from_button(message, uid: int, context: ContextTypes.DEF
         return False
 
     if not ai_is_enabled():
-        await message.reply_text("🚫 AI chat is temporarily disabled. Please try again later.")
+        await message.reply_text("🚫 AI chat is temporarily disabled.")
         return False
 
-    # force choose language again
-    set_ai_prefs(uid, ai_mode=False)
-    await message.reply_text("🌐 Select language:", reply_markup=ai_language_kb())
+    # reset AI state
+    set_ai_prefs(uid, ai_mode=False, lang=None, style=None)
+
+    await message.reply_text(
+        "🌐 Select your language:",
+        reply_markup=ai_language_kb()
+    )
     return True
