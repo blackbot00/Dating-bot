@@ -84,11 +84,14 @@ def ai_language_kb():
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("Tamil", callback_data="ai_lang:Tamil"),
-            InlineKeyboardButton("English", callback_data="ai_lang:English")
+            InlineKeyboardButton("Tanglish", callback_data="ai_lang:Tanglish")
         ],
         [
-            InlineKeyboardButton("Hindi", callback_data="ai_lang:Hindi"),
+            InlineKeyboardButton("English", callback_data="ai_lang:English"),
             InlineKeyboardButton("Telugu", callback_data="ai_lang:Telugu")
+        ],
+        [
+            InlineKeyboardButton("Hindi", callback_data="ai_lang:Hindi")
         ]
     ])
 
