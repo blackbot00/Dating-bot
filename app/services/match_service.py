@@ -1,39 +1,7 @@
-from datetime import datetime, date
-from app.db import active_chats_col, users_col
+from datetime import datetime
+from app.db import active_chats_col
 from app.services.queue_service import find_candidate
 from app.services.premium_service import user_has_premium
-
-FREE_DAILY_LIMIT = 10
-
-
-def _can_human_chat(uid: int) -> bool:
-    if user_has_premium(uid):
-        return True
-
-    u = users_col.find_one(
-        {"_id": uid},
-        {"human_count": 1, "human_date": 1}
-    )
-
-    today = date.today().isoformat()
-
-    if not u or u.get("human_date") != today:
-        users_col.update_one(
-            {"_id": uid},
-            {"$set": {"human_count": 0, "human_date": today}},
-            upsert=True
-        )
-        return True
-
-    return u.get("human_count", 0) < FREE_DAILY_LIMIT
-
-
-def _inc_human(uid: int):
-    users_col.update_one(
-        {"_id": uid},
-        {"$inc": {"human_count": 1}},
-        upsert=True
-    )
 
 
 def is_in_chat(uid: int) -> bool:
@@ -49,14 +17,50 @@ def create_chat(u1: int, u2: int):
         "status": "active",
         "started_at": datetime.utcnow().isoformat()
     })
-    _inc_human(u1)
-    _inc_human(u2)
+
+
+def get_partner(uid: int):
+    chat = active_chats_col.find_one(
+        {"$or": [{"user1": uid}, {"user2": uid}], "status": "active"}
+    )
+    if not chat:
+        return None
+    return chat["user2"] if chat["user1"] == uid else chat["user1"]
+
+
+# ✅ THIS WAS MISSING — VERY IMPORTANT
+def end_chat(uid: int):
+    chat = active_chats_col.find_one(
+        {"$or": [{"user1": uid}, {"user2": uid}], "status": "active"}
+    )
+    if not chat:
+        return None
+
+    active_chats_col.update_one(
+        {"_id": chat["_id"]},
+        {"$set": {"status": "ended", "ended_at": datetime.utcnow().isoformat()}}
+    )
+    return chat
 
 
 def try_match(user: dict):
     uid = user["_id"]
 
-    if not _can_human_chat(uid):
-        return None
+    # 💎 Premium preference match
+    if user_has_premium(uid):
+        q = {}
+        if user.get("pref_gender"):
+            q["gender"] = user["pref_gender"]
+        if user.get("pref_age_min") and user.get("pref_age_max"):
+            q["age"] = {
+                "$gte": user["pref_age_min"],
+                "$lte": user["pref_age_max"]
+            }
+        if q:
+            q["_id"] = {"$ne": uid}
+            c = find_candidate(q)
+            if c:
+                return c
 
+    # 🔁 Fallback random match
     return find_candidate({"_id": {"$ne": uid}})
