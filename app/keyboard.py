@@ -4,7 +4,9 @@ from app.constants import STATES, AI_STYLES
 
 # ---------- Registration ----------
 
-def states_kb():
+def states_kb(edit=False):
+    prefix = "edit_state" if edit else "reg_state"
+
     rows = []
     for i in range(0, len(STATES), 3):
         row = []
@@ -12,28 +14,28 @@ def states_kb():
             row.append(
                 InlineKeyboardButton(
                     STATES[j],
-                    callback_data=f"reg_state:{STATES[j]}"
+                    callback_data=f"{prefix}:{STATES[j]}"
                 )
             )
         rows.append(row)
     return InlineKeyboardMarkup(rows)
 
 
-def genders_kb():
+def genders_kb(edit=False):
+    prefix = "edit_gender" if edit else "reg_gender"
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("Male", callback_data="reg_gender:Male")],
-        [InlineKeyboardButton("Female", callback_data="reg_gender:Female")],
-        [InlineKeyboardButton("Transgender", callback_data="reg_gender:Transgender")]
+        [InlineKeyboardButton("Male", callback_data=f"{prefix}:Male")],
+        [InlineKeyboardButton("Female", callback_data=f"{prefix}:Female")],
+        [InlineKeyboardButton("Transgender", callback_data=f"{prefix}:Transgender")]
     ])
 
 
-# ---------- Main Chat Choice ----------
+# ---------- Main Chat Choice (NO edit profile here) ----------
 
 def choose_chat_kb():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("👤 Human", callback_data="chat_choice:human")],
-        [InlineKeyboardButton("🤖 AI", callback_data="chat_choice:ai")],
-        [InlineKeyboardButton("✏️ Edit Profile", callback_data="profile:edit")]
+        [InlineKeyboardButton("🤖 AI", callback_data="chat_choice:ai")]
     ])
 
 
@@ -43,9 +45,25 @@ def choose_again_kb():
         [
             InlineKeyboardButton("👤 Human", callback_data="chat_choice:human"),
             InlineKeyboardButton("🤖 AI", callback_data="chat_choice:ai")
-        ],
-        [InlineKeyboardButton("✏️ Edit Profile", callback_data="profile:edit")]
+        ]
     ])
+
+
+# ---------- Profile Edit ----------
+
+def edit_profile_kb(is_premium: bool):
+    rows = [
+        [InlineKeyboardButton("👤 Edit Gender", callback_data="edit:gender")],
+        [InlineKeyboardButton("📅 Edit Age", callback_data="edit:age")],
+        [InlineKeyboardButton("🌍 Edit State", callback_data="edit:state")]
+    ]
+
+    if is_premium:
+        rows.append(
+            [InlineKeyboardButton("⭐ Partner Preference", callback_data="edit:preference")]
+        )
+
+    return InlineKeyboardMarkup(rows)
 
 
 # ---------- Previous Report ----------
@@ -78,12 +96,9 @@ def ai_language_kb():
 def ai_style_kb():
     rows = []
     for style in AI_STYLES:
-        rows.append([
-            InlineKeyboardButton(
-                style,
-                callback_data=f"ai_style:{style}"
-            )
-        ])
+        rows.append(
+            [InlineKeyboardButton(style, callback_data=f"ai_style:{style}")]
+        )
     return InlineKeyboardMarkup(rows)
 
 
