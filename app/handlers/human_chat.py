@@ -5,12 +5,12 @@ from datetime import datetime
 import re
 
 from app.handlers.common import banned_guard
-from app.keyboard import (
-    inchat_kb,
-    choose_again_kb,
-    prev_report_reason_kb
+from app.keyboard import inchat_kb, choose_again_kb, prev_report_reason_kb
+from app.services.user_service import (
+    get_user,
+    human_can_chat,
+    human_increment
 )
-from app.services.user_service import get_user
 from app.services.queue_service import add_to_queue, remove_from_queue
 from app.services.match_service import (
     try_match,
@@ -27,8 +27,6 @@ from app.config import GROUP2_ID
 LINK_REGEX = re.compile(r"(https?://|www\.|t\.me/|telegram\.me/)", re.IGNORECASE)
 
 
-# ---------- PARTNER INFO ----------
-
 def partner_info_text(state: str, age: int) -> str:
     return (
         "✅ Partner Matched\n\n"
@@ -40,36 +38,6 @@ def partner_info_text(state: str, age: int) -> str:
     )
 
 
-# ---------- CHAT HELPERS ----------
-
-def get_active_chat_doc(uid: int):
-    return active_chats_col.find_one(
-        {"$or": [{"user1": uid}, {"user2": uid}], "status": "active"}
-    )
-
-
-def is_media_unlocked(chat_doc) -> bool:
-    try:
-        started = datetime.fromisoformat(chat_doc.get("started_at"))
-    except:
-        return True
-
-    diff = (datetime.utcnow() - started).total_seconds()
-    return diff >= 120
-
-
-def save_last_partner(uid: int, partner_id: int):
-    users_col.update_one(
-        {"_id": uid},
-        {"$set": {
-            "last_partner_id": partner_id,
-            "last_chat_ended_at": datetime.utcnow().isoformat()
-        }}
-    )
-
-
-# ---------- CALLBACKS ----------
-
 async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await banned_guard(update, context):
         return
@@ -78,57 +46,6 @@ async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     uid = q.from_user.id
 
-    # ---- Previous chat report ----
-    if q.data == "prev_report":
-        u = get_user(uid)
-        last_partner = u.get("last_partner_id") if u else None
-
-        if not last_partner:
-            await q.message.reply_text("❌ No previous chat found.")
-            return
-
-        await q.message.reply_text(
-            "🚩 Report previous chat\n\nSelect reason:",
-            reply_markup=prev_report_reason_kb()
-        )
-        return
-
-    if q.data.startswith("prevrep:"):
-        reason = q.data.split(":", 1)[1]
-
-        if reason == "cancel":
-            await q.message.reply_text(
-                "✅ Cancelled.",
-                reply_markup=choose_again_kb()
-            )
-            return
-
-        u = get_user(uid)
-        last_partner = u.get("last_partner_id") if u else None
-
-        if not last_partner:
-            await q.message.reply_text("❌ No previous chat found.")
-            return
-
-        reports_col.insert_one({
-            "reporter_id": uid,
-            "reported_id": last_partner,
-            "reason": reason,
-            "created_at": datetime.utcnow().isoformat()
-        })
-
-        await log_group1(
-            context.bot,
-            f"🚩 PREVIOUS CHAT REPORT\nReporter: {uid}\nReported: {last_partner}\nReason: {reason}"
-        )
-
-        await q.message.reply_text(
-            "✅ Report submitted. Thank you!",
-            reply_markup=choose_again_kb()
-        )
-        return
-
-    # ---- Human chat start ----
     if q.data == "chat_choice:human":
         user = get_user(uid)
 
@@ -137,9 +54,17 @@ async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         if is_in_chat(uid):
+            await q.message.reply_text("✅ You are already in chat.", reply_markup=inchat_kb())
+            return
+
+        # ✅ DAILY LIMIT CHECK
+        allowed, remaining = human_can_chat(uid)
+        if not allowed:
             await q.message.reply_text(
-                "✅ You are already in chat.",
-                reply_markup=inchat_kb()
+                "🚫 *Daily human chat limit reached* (11/day)\n\n"
+                "💎 Premium users get unlimited chats.\n"
+                "Use /premium",
+                parse_mode="Markdown"
             )
             return
 
@@ -149,6 +74,9 @@ async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cid = candidate["_id"]
             remove_from_queue(cid)
             create_chat(uid, cid)
+
+            # ✅ increment only when chat starts
+            human_increment(uid)
 
             partner = get_user(cid)
 
@@ -165,100 +93,3 @@ async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             add_to_queue(uid, user["state"], user["gender"], user["age"])
             await q.message.reply_text("🔎 Searching for a human match…")
-
-        return
-
-    # ---- Exit / Report ----
-    if q.data.startswith("chat_action:"):
-        action = q.data.split(":", 1)[1]
-
-        chat = end_chat(uid)
-        remove_from_queue(uid)
-
-        partner_id = None
-        if chat:
-            partner_id = chat["user2"] if chat["user1"] == uid else chat["user1"]
-
-        if partner_id:
-            save_last_partner(uid, partner_id)
-            save_last_partner(partner_id, uid)
-
-        if action == "report" and partner_id:
-            reports_col.insert_one({
-                "reporter_id": uid,
-                "reported_id": partner_id,
-                "created_at": datetime.utcnow().isoformat()
-            })
-
-            await log_group1(
-                context.bot,
-                f"🚩 REPORT\nReporter: {uid}\nReported: {partner_id}"
-            )
-
-        await q.message.reply_text(
-            "✅ Partner left 🚶🏼\n\nChoose again:",
-            reply_markup=choose_again_kb()
-        )
-
-        if partner_id:
-            await context.bot.send_message(
-                chat_id=partner_id,
-                text="✅ Partner left 🚶🏼\n\nChoose again:",
-                reply_markup=choose_again_kb()
-            )
-
-
-# ---------- TEXT ----------
-
-async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await banned_guard(update, context):
-        return
-
-    uid = update.effective_user.id
-    partner_id = get_partner(uid)
-    if not partner_id:
-        return
-
-    text = (update.message.text or "").strip()
-    if not text:
-        return
-
-    if LINK_REGEX.search(text):
-        await update.message.reply_text("🚫 Links are restricted 🥸")
-        await log_group2(context.bot, f"🚫 LINK BLOCKED\nFrom: {uid}\n{text}")
-        return
-
-    await context.bot.send_message(chat_id=partner_id, text=text)
-    await log_group2(context.bot, f"💬 CHAT\nFrom: {uid}\nTo: {partner_id}")
-
-
-# ---------- ✅ MEDIA (THIS WAS MISSING) ----------
-
-async def human_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if await banned_guard(update, context):
-        return
-
-    uid = update.effective_user.id
-    partner_id = get_partner(uid)
-    if not partner_id:
-        return
-
-    chat_doc = get_active_chat_doc(uid)
-    if not chat_doc:
-        return
-
-    if not is_media_unlocked(chat_doc):
-        await update.message.reply_text("⏱️ Media sharing unlocked after 2 minutes 🥸")
-        return
-
-    try:
-        await update.message.copy(chat_id=partner_id)
-    except:
-        await update.message.reply_text("❌ Failed to send media.")
-        return
-
-    try:
-        if GROUP2_ID:
-            await update.message.copy(chat_id=GROUP2_ID)
-    except:
-        pass
