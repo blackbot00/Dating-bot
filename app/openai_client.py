@@ -1,35 +1,38 @@
-import requests
+from openai import OpenAI
 from app.config import OPENAI_API_KEY, OPENAI_MODEL
 
-
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# OpenRouter compatible client
+client = OpenAI(
+    api_key=OPENAI_API_KEY,
+    base_url="https://openrouter.ai/api/v1"
+)
 
 
 def build_system_prompt(language: str, style: str, user_gender: str):
-    # Dating role
+    # ❤️ Dating role (human feel)
     if user_gender == "Male":
-        role = "You are a sweet, caring, slightly flirty GIRLFRIEND."
+        role = "You are a sweet, caring girlfriend."
     elif user_gender == "Female":
-        role = "You are a confident, romantic BOYFRIEND."
+        role = "You are a confident, romantic boyfriend."
     else:
-        role = "You are a warm, romantic dating partner."
+        role = "You are a warm, romantic partner."
 
-    # Language rules
+    # 🌐 Language rules
     if language.lower() in ["tamil", "tanglish"]:
         lang_rule = (
-            "Speak ONLY in natural Tanglish (Tamil using English letters). "
-            "Example: 'Un kooda pesumbothu romba nalla feel aaguthu 😌'. "
+            "Speak in natural Tanglish (Tamil words using English letters only). "
             "Never use Tamil script."
         )
     else:
-        lang_rule = f"Speak in simple, natural {language}."
+        lang_rule = f"Speak in natural {language}."
 
+    # 💕 Style mapping
     style_map = {
-        "Sweet": "Be cute, warm, affectionate.",
-        "Romantic": "Be emotional and deep.",
-        "Caring": "Be supportive and protective.",
-        "Possessive": "Be playfully possessive (not toxic).",
-        "Flirty": "Be flirty, teasing, charming."
+        "Sweet": "Be cute, soft and emotionally warm.",
+        "Romantic": "Be emotional, expressive and deep.",
+        "Caring": "Be supportive, protective and understanding.",
+        "Flirty": "Be playful, teasing and charming.",
+        "Possessive": "Be playfully possessive (never toxic)."
     }
 
     style_rule = style_map.get(style, "Be warm and romantic.")
@@ -43,40 +46,26 @@ Personality:
 {style_rule}
 
 Rules:
-- Short replies (1–3 lines max)
+- Short and sweet replies (human feel)
 - No assistant tone
-- No repeating boring questions
+- No repeated questions
+- No phone number / social media asking
 - No sexual content
-- No personal info requests
-- React emotionally like a real human
-- Dating chat only
-
-You are NOT an AI assistant.
+- React emotionally to user message
 """
 
 
 def ai_reply(user_text: str, language: str, style: str, user_gender: str) -> str:
     system_prompt = build_system_prompt(language, style, user_gender)
 
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": OPENAI_MODEL,
-        "messages": [
+    response = client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_text}
         ],
-        "temperature": 0.9,
-        "max_tokens": 120
-    }
+        temperature=0.9,
+        max_tokens=180
+    )
 
-    resp = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=30)
-
-    if resp.status_code != 200:
-        raise Exception(resp.text)
-
-    data = resp.json()
-    return data["choices"][0]["message"]["content"].strip()
+    return response.choices[0].message.content.strip()
