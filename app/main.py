@@ -18,8 +18,13 @@ from app.handlers.register import reg_callback
 from app.handlers.ai_chat import ai_callbacks
 from app.handlers.human_chat import human_callbacks, human_media
 from app.handlers.admin import (
-    about_cmd, broadcast_cmd, ban_cmd, unban_cmd, warn_cmd,
-    premium_on, premium_off, status_cmd
+    about_cmd,
+    broadcast_cmd,
+    ban_cmd,
+    unban_cmd,
+    warn_cmd,
+    status_cmd,
+    giveaway_cmd          # ✅ NEW
 )
 from app.handlers.ai_commands import ai_enable_cmd, ai_disable_cmd
 from app.handlers.router import text_router
@@ -30,7 +35,7 @@ from app.handlers.profile import edit_profile_cmd
 def build_bot():
     bot = Application.builder().token(BOT_TOKEN).build()
 
-    # ✅ User commands
+    # ---------------- User commands ----------------
     bot.add_handler(CommandHandler("start", start_cmd))
     bot.add_handler(CommandHandler("chat", chat_cmd))
     bot.add_handler(CommandHandler("exit", exit_cmd))
@@ -41,24 +46,24 @@ def build_bot():
         "✅ /start - Register / Open Menu\n"
         "💬 /chat - Choose Human / AI\n"
         "🛑 /exit - Stop conversation\n"
-        "📝 /edit_profile - Re-register profile\n"
+        "✏️ /edit_profile - Edit your profile\n"
         "🔐 /privacy - Privacy Policy\n"
         "💎 /premium - Premium Plans\n"
         "❓ /help - Help Menu"
     )))
 
-    # ✅ Privacy
+    # ---------------- Privacy ----------------
     bot.add_handler(CommandHandler("privacy", lambda u, c: u.message.reply_text(
         "🔐 *Privacy Policy*\n\n"
         "1️⃣ 🛡️ *Safety First* — We take user safety seriously.\n"
         "2️⃣ 😇 *Don't be Misbehave* — Respect others and chat politely.\n"
         "3️⃣ 🚫 *No Personal Info* — Never share phone, OTP, address, bank details.\n"
         "4️⃣ 🚩 *Report Option* — Use Report button if someone abuses.\n"
-        "5️⃣ 🔒 *Data Use* — Registration info (state/gender/age) used only for matching.\n",
+        "5️⃣ 🔒 *Data Use* — Registration info used only for matching.\n",
         parse_mode="Markdown"
     )))
 
-    # ✅ Premium
+    # ---------------- Premium info (USER ONLY) ----------------
     bot.add_handler(CommandHandler("premium", lambda u, c: u.message.reply_text(
         "💎 *Premium Plans*\n\n"
         "🗓️ 1 Week  — ₹10\n"
@@ -68,25 +73,24 @@ def build_bot():
         "🤖 Unlimited AI Chat\n"
         "⚡ Priority Human Matching\n"
         "🛡️ Safer & Faster Experience\n\n"
-        "📌 *Note:* Premium will be enabled soon.\n",
+        "📌 *Note:* Premium giveaways & payments handled by Admin.\n",
         parse_mode="Markdown"
     )))
 
-    # ✅ Admin commands
+    # ---------------- Admin commands ----------------
     bot.add_handler(CommandHandler("about", about_cmd))
     bot.add_handler(CommandHandler("status", status_cmd))
-    bot.add_handler(CommandHandler("premium_on", premium_on))
-    bot.add_handler(CommandHandler("premium_off", premium_off))
+    bot.add_handler(CommandHandler("giveaway", giveaway_cmd))   # 🎁 NEW
     bot.add_handler(CommandHandler("broadcast", broadcast_cmd))
     bot.add_handler(CommandHandler("ban", ban_cmd))
     bot.add_handler(CommandHandler("unban", unban_cmd))
     bot.add_handler(CommandHandler("warn", warn_cmd))
 
-    # ✅ AI admin control
+    # ---------------- AI admin control ----------------
     bot.add_handler(CommandHandler("ai_enable", ai_enable_cmd))
     bot.add_handler(CommandHandler("ai_disable", ai_disable_cmd))
 
-    # ✅ Callbacks (FINAL FIX ✅)
+    # ---------------- Callbacks ----------------
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
 
     bot.add_handler(CallbackQueryHandler(
@@ -99,14 +103,14 @@ def build_bot():
         pattern=r"^(chat_choice:human|chat_action:.*|prev_report|prevrep:.*)$"
     ))
 
-    # ✅ Media handler
+    # ---------------- Media ----------------
     bot.add_handler(MessageHandler(
-        (filters.PHOTO | filters.VIDEO | filters.Document.ALL | filters.AUDIO | filters.VOICE |
-         filters.VIDEO_NOTE | filters.Sticker.ALL | filters.ANIMATION),
+        (filters.PHOTO | filters.VIDEO | filters.Document.ALL | filters.AUDIO |
+         filters.VOICE | filters.VIDEO_NOTE | filters.Sticker.ALL | filters.ANIMATION),
         human_media
     ))
 
-    # ✅ Text router
+    # ---------------- Text router ----------------
     bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
     return bot
