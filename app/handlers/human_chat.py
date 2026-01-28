@@ -230,15 +230,22 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     user = get_user(uid)
 
-    # 🔴 VERY IMPORTANT
-    # If user is in AI chat, ignore here
+    # ❌ AI chat ignore
     if user and user.get("ai_mode"):
         return
 
-    partner_id = get_partner(uid)
-    if not partner_id:
+    # 🔥 DIRECT DB READ (NO get_partner)
+    chat = active_chats_col.find_one(
+        {
+            "$or": [{"user1": uid}, {"user2": uid}],
+            "status": "active"
+        }
+    )
+
+    if not chat:
         return
 
+    partner_id = chat["user2"] if chat["user1"] == uid else chat["user1"]
     partner = get_user(partner_id)
 
     text = (update.message.text or "").strip()
@@ -254,13 +261,13 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # ✅ SEND MESSAGE TO PARTNER
+    # ✅ SEND MESSAGE
     await context.bot.send_message(
         chat_id=partner_id,
         text=text
     )
 
-    # ✅ GROUP 2 LOG (YOUR REQUIRED FORMAT)
+    # ✅ GROUP 2 LOG (YOUR FORMAT)
     time_str = datetime.utcnow().strftime("%I:%M %p")
 
     log_text = (
