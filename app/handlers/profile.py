@@ -61,18 +61,21 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     uid = q.from_user.id
     u = get_user(uid)
+    if not u:
+        return
+
     is_premium = user_has_premium(uid)
 
-    # -------- BACK --------
+    # ---------- BACK ----------
     if q.data == "edit:back":
         await q.message.edit_text(
-            profile_text(u, is_premium),
+            profile_text(get_user(uid), is_premium),
             reply_markup=edit_profile_kb(is_premium=True),
             parse_mode="Markdown"
         )
         return
 
-    # -------- GENDER --------
+    # ---------- EDIT GENDER ----------
     if q.data == "edit:gender":
         await q.message.edit_text(
             "👤 Select Gender:",
@@ -83,6 +86,7 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if q.data.startswith("edit_gender:"):
         gender = q.data.split(":", 1)[1]
         users_col.update_one({"_id": uid}, {"$set": {"gender": gender}})
+
         await q.message.edit_text(
             f"✅ Gender updated to *{gender}*",
             parse_mode="Markdown",
@@ -90,7 +94,7 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # -------- AGE --------
+    # ---------- EDIT AGE ----------
     if q.data == "edit:age":
         await q.message.edit_text(
             "🎂 Select your age:",
@@ -101,6 +105,7 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if q.data.startswith("edit_age:"):
         age = int(q.data.split(":", 1)[1])
         users_col.update_one({"_id": uid}, {"$set": {"age": age}})
+
         await q.message.edit_text(
             f"✅ Age updated to *{age}*",
             parse_mode="Markdown",
@@ -108,7 +113,7 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # -------- STATE --------
+    # ---------- EDIT STATE ----------
     if q.data == "edit:state":
         await q.message.edit_text(
             "🌍 Select State:",
@@ -119,6 +124,7 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if q.data.startswith("edit_state:"):
         state = q.data.split(":", 1)[1]
         users_col.update_one({"_id": uid}, {"$set": {"state": state}})
+
         await q.message.edit_text(
             f"✅ State updated to *{state}*",
             parse_mode="Markdown",
@@ -126,17 +132,32 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # -------- PREFERENCE --------
+    # ---------- PARTNER PREFERENCE ----------
     if q.data == "edit:preference":
         if not is_premium:
             await q.message.reply_text(
-                "🔒 Premium feature\nUpgrade to unlock ❤️"
+                "🔒 *Premium Feature*\nUpgrade to unlock ❤️",
+                parse_mode="Markdown"
             )
             return
 
         await q.message.edit_text(
-            "⭐ *Partner Preference*",
+            "⭐ *Partner Preference*\n\nChoose option:",
             reply_markup=preference_kb(),
             parse_mode="Markdown"
+        )
+        return
+
+    if q.data.startswith("pref:"):
+        pref = q.data.split(":", 1)[1]
+        users_col.update_one(
+            {"_id": uid},
+            {"$set": {"partner_preference": pref}}
+        )
+
+        await q.message.edit_text(
+            f"✅ Preference set to *{pref.title()}*",
+            parse_mode="Markdown",
+            reply_markup=edit_profile_kb(is_premium=True)
         )
         return
