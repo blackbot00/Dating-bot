@@ -230,6 +230,11 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     user = get_user(uid)
 
+    # 🔴 VERY IMPORTANT
+    # If user is in AI chat, ignore here
+    if user and user.get("ai_mode"):
+        return
+
     partner_id = get_partner(uid)
     if not partner_id:
         return
@@ -240,6 +245,7 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not text:
         return
 
+    # 🚫 Link block
     if LINK_REGEX.search(text):
         await update.message.reply_text("🚫 Links are restricted 🥸")
         await log_group2(
@@ -248,13 +254,13 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # ✅ Send message to partner
+    # ✅ SEND MESSAGE TO PARTNER
     await context.bot.send_message(
         chat_id=partner_id,
         text=text
     )
 
-    # ✅ GROUP 2 LOG (REQUIRED FORMAT)
+    # ✅ GROUP 2 LOG (YOUR REQUIRED FORMAT)
     time_str = datetime.utcnow().strftime("%I:%M %p")
 
     log_text = (
