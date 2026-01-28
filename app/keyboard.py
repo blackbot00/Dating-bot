@@ -8,8 +8,8 @@ from app.constants import STATES, AI_STYLES
 
 def states_kb(edit: bool = False):
     prefix = "edit_state" if edit else "reg_state"
-
     rows = []
+
     for i in range(0, len(STATES), 3):
         row = []
         for j in range(i, min(i + 3, len(STATES))):
@@ -26,16 +26,16 @@ def states_kb(edit: bool = False):
 
 def genders_kb(edit: bool = False):
     prefix = "edit_gender" if edit else "reg_gender"
-
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("Male", callback_data=f"{prefix}:Male")],
         [InlineKeyboardButton("Female", callback_data=f"{prefix}:Female")],
-        [InlineKeyboardButton("Transgender", callback_data=f"{prefix}:Transgender")]
+        [InlineKeyboardButton("Transgender", callback_data=f"{prefix}:Transgender")],
+        [InlineKeyboardButton("⬅️ Back", callback_data="edit:back")]
     ])
 
 
 # =================================================
-# MAIN CHAT MENU
+# MAIN CHAT
 # =================================================
 
 def choose_chat_kb():
@@ -64,41 +64,41 @@ def edit_profile_kb(is_premium: bool):
         [InlineKeyboardButton("👤 Edit Gender", callback_data="edit:gender")],
         [InlineKeyboardButton("🎂 Edit Age", callback_data="edit:age")],
         [InlineKeyboardButton("🌍 Edit State", callback_data="edit:state")],
-        [InlineKeyboardButton("⭐ Partner Preference", callback_data="edit:preference")]
     ]
-    return InlineKeyboardMarkup(rows)
-    
 
-def age_kb_edit(min_age: int = 11, max_age: int = 80, cols: int = 6):
-    """
-    Creates compact age selection keyboard
-    Example: 6 columns × ~12 rows
-    """
-    rows = []
-    row = []
-
-    for age in range(min_age, max_age + 1):
-        row.append(
-            InlineKeyboardButton(
-                str(age),
-                callback_data=f"edit_age:{age}"
-            )
-        )
-
-        if len(row) == cols:
-            rows.append(row)
-            row = []
-
-    if row:
-        rows.append(row)
-
-    # Back button
     rows.append(
-        [InlineKeyboardButton("⬅️ Back", callback_data="edit:back")]
+        [InlineKeyboardButton("⭐ Partner Preference", callback_data="edit:preference")]
     )
 
     return InlineKeyboardMarkup(rows)
 
+
+# =================================================
+# EDIT AGE (6 columns × short height)
+# =================================================
+
+def edit_age_kb():
+    rows = []
+    ages = list(range(11, 81))  # 11–80
+
+    for i in range(0, len(ages), 6):
+        row = []
+        for age in ages[i:i + 6]:
+            row.append(
+                InlineKeyboardButton(
+                    str(age),
+                    callback_data=f"edit_age:{age}"
+                )
+            )
+        rows.append(row)
+
+    rows.append([InlineKeyboardButton("⬅️ Back", callback_data="edit:back")])
+    return InlineKeyboardMarkup(rows)
+
+
+# =================================================
+# PARTNER PREFERENCE
+# =================================================
 
 def preference_kb():
     return InlineKeyboardMarkup([
@@ -106,20 +106,6 @@ def preference_kb():
         [InlineKeyboardButton("🎉 Age", callback_data="pref:age")],
         [InlineKeyboardButton("🎲 Random", callback_data="pref:random")],
         [InlineKeyboardButton("⬅️ Back", callback_data="edit:back")]
-    ])
-
-
-# =================================================
-# PREVIOUS CHAT REPORT
-# =================================================
-
-def prev_report_reason_kb():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🚫 Abuse", callback_data="prevrep:abuse")],
-        [InlineKeyboardButton("🔞 Adult content", callback_data="prevrep:adult")],
-        [InlineKeyboardButton("🧨 Scam / Fraud", callback_data="prevrep:scam")],
-        [InlineKeyboardButton("🤢 Harassment", callback_data="prevrep:harass")],
-        [InlineKeyboardButton("❌ Cancel", callback_data="prevrep:cancel")]
     ])
 
 
@@ -137,19 +123,15 @@ def ai_language_kb():
             InlineKeyboardButton("English", callback_data="ai_lang:English"),
             InlineKeyboardButton("Telugu", callback_data="ai_lang:Telugu")
         ],
-        [
-            InlineKeyboardButton("Hindi", callback_data="ai_lang:Hindi")
-        ]
+        [InlineKeyboardButton("Hindi", callback_data="ai_lang:Hindi")]
     ])
 
 
 def ai_style_kb():
-    rows = []
-    for style in AI_STYLES:
-        rows.append(
-            [InlineKeyboardButton(style, callback_data=f"ai_style:{style}")]
-        )
-    return InlineKeyboardMarkup(rows)
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(style, callback_data=f"ai_style:{style}")]
+        for style in AI_STYLES
+    ])
 
 
 def ai_exit_kb():
