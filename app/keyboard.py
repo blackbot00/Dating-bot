@@ -71,13 +71,20 @@ def edit_profile_kb(is_premium: bool):
 
 def edit_age_kb():
     rows = []
-    for i in range(11, 81, 10):
-        row = []
-        for j in range(i, min(i + 10, 81)):
-            row.append(
-                InlineKeyboardButton(str(j), callback_data=f"edit_age:{j}")
-            )
-        rows.append(row)
+
+    col1 = list(range(11, 81))
+    col2 = list(range(21, 91))
+
+    for a, b in zip(col1, col2):
+        if b > 80:
+            rows.append([
+                InlineKeyboardButton(str(a), callback_data=f"edit_age:{a}")
+            ])
+        else:
+            rows.append([
+                InlineKeyboardButton(str(a), callback_data=f"edit_age:{a}"),
+                InlineKeyboardButton(str(b), callback_data=f"edit_age:{b}")
+            ])
 
     rows.append([InlineKeyboardButton("⬅️ Back", callback_data="edit:back")])
     return InlineKeyboardMarkup(rows)
