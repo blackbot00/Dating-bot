@@ -64,17 +64,13 @@ def edit_profile_kb(is_premium: bool):
         [InlineKeyboardButton("👤 Edit Gender", callback_data="edit:gender")],
         [InlineKeyboardButton("🎂 Edit Age", callback_data="edit:age")],
         [InlineKeyboardButton("🌍 Edit State", callback_data="edit:state")],
-    ]
-
-    rows.append(
         [InlineKeyboardButton("⭐ Partner Preference", callback_data="edit:preference")]
-    )
-
+    ]
     return InlineKeyboardMarkup(rows)
 
 
 # =================================================
-# EDIT AGE (6 columns × short height)
+# EDIT AGE (6 columns × compact height)
 # =================================================
 
 def edit_age_kb():
@@ -106,6 +102,20 @@ def preference_kb():
         [InlineKeyboardButton("🎉 Age", callback_data="pref:age")],
         [InlineKeyboardButton("🎲 Random", callback_data="pref:random")],
         [InlineKeyboardButton("⬅️ Back", callback_data="edit:back")]
+    ])
+
+
+# =================================================
+# PREVIOUS CHAT REPORT  ✅ (THIS WAS MISSING)
+# =================================================
+
+def prev_report_reason_kb():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🚫 Abuse", callback_data="prevrep:abuse")],
+        [InlineKeyboardButton("🔞 Adult Content", callback_data="prevrep:adult")],
+        [InlineKeyboardButton("🧨 Scam / Fraud", callback_data="prevrep:scam")],
+        [InlineKeyboardButton("🤢 Harassment", callback_data="prevrep:harass")],
+        [InlineKeyboardButton("❌ Cancel", callback_data="prevrep:cancel")]
     ])
 
 
