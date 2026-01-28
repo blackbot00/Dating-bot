@@ -95,23 +95,46 @@ async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # ---------- EDIT AGE ----------
-    if q.data == "edit:age":
-        await q.message.edit_text(
-            "🎂 Select your age:",
-            reply_markup=edit_age_kb()
-        )
-        return
+if q.data == "edit:age":
+    await q.message.edit_text(
+        "🎂 *Select your age:*",
+        parse_mode="Markdown",
+        reply_markup=edit_age_kb()
+    )
+    return
 
-    if q.data.startswith("edit_age:"):
+
+# ---------- AGE SELECTED ----------
+if q.data.startswith("edit_age:"):
+    try:
         age = int(q.data.split(":", 1)[1])
-        users_col.update_one({"_id": uid}, {"$set": {"age": age}})
-
-        await q.message.edit_text(
-            f"✅ Age updated to *{age}*",
-            parse_mode="Markdown",
-            reply_markup=edit_profile_kb(is_premium=True)
-        )
+    except:
+        await q.message.reply_text("❌ Invalid age")
         return
+
+    if age < 11 or age > 80:
+        await q.message.reply_text("❌ Age must be between 11 and 80")
+        return
+
+    # ✅ Update DB
+    users_col.update_one(
+        {"_id": uid},
+        {"$set": {"age": age}}
+    )
+
+    # 🔁 Reload updated user
+    u = get_user(uid)
+    is_premium = user_has_premium(uid)
+
+    # ✅ Confirmation + back to profile
+    await q.message.edit_text(
+        "✅ *Profile Updated Successfully!*\n\n"
+        f"🎂 Age: *{age}*\n\n"
+        "You can continue editing 👇",
+        parse_mode="Markdown",
+        reply_markup=edit_profile_kb(is_premium=True)
+    )
+    return
 
     # ---------- EDIT STATE ----------
     if q.data == "edit:state":
