@@ -12,7 +12,7 @@ from telegram.ext import (
 from app.config import BOT_TOKEN
 from app.web_server import app as flask_app
 
-# ---------------- HANDLERS ----------------
+# -------- Handlers --------
 from app.handlers.start import start_cmd
 from app.handlers.chat import chat_cmd
 from app.handlers.exit_cmd import exit_cmd
@@ -91,16 +91,14 @@ def build_bot():
     bot.add_handler(CommandHandler("ai_enable", ai_enable_cmd))
     bot.add_handler(CommandHandler("ai_disable", ai_disable_cmd))
 
-    # ================= CALLBACK QUERY HANDLERS =================
+    # ================= CALLBACKS =================
 
-    # Registration flow
-    bot.add_handler(
-        CallbackQueryHandler(reg_callback, pattern=r"^reg_")
-    )
+    # Registration buttons
+    bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
 
-    # Profile edit (IMPORTANT: covers ALL edit & pref callbacks)
+    # Profile edit + preference buttons
     bot.add_handler(
-        CallbackQueryHandler(profile_callbacks, pattern=r"^(edit_|pref:)")
+        CallbackQueryHandler(profile_callbacks, pattern=r"^(edit:|edit_|pref:)")
     )
 
     # AI buttons
@@ -120,34 +118,40 @@ def build_bot():
     )
 
     # ================= MESSAGE HANDLERS =================
-    # ORDER IS VERY IMPORTANT BELOW 👇
 
-    # 1️⃣ Registration age input
+    # 🔴 IMPORTANT ORDER 🔴
+
+    # Registration age input (ONLY when in ASK_AGE state)
     bot.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text)
     )
 
-    # 2️⃣ AI chat messages
+    # AI chat text (ONLY when ai_mode = True)
     bot.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, ai_text)
     )
 
-    # 3️⃣ Human chat messages
+    # Human chat text (ONLY when user in active chat)
     bot.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, human_text)
     )
 
-    # 4️⃣ Human media
+    # Human media
     bot.add_handler(
         MessageHandler(
-            filters.PHOTO | filters.VIDEO | filters.Document.ALL |
-            filters.AUDIO | filters.VOICE | filters.VIDEO_NOTE |
-            filters.Sticker.ALL | filters.ANIMATION,
+            filters.PHOTO
+            | filters.VIDEO
+            | filters.Document.ALL
+            | filters.AUDIO
+            | filters.VOICE
+            | filters.VIDEO_NOTE
+            | filters.Sticker.ALL
+            | filters.ANIMATION,
             human_media
         )
     )
 
-    # 5️⃣ Fallback router (ALWAYS LAST)
+    # Fallback router (ALWAYS LAST)
     bot.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, text_router)
     )
@@ -156,13 +160,17 @@ def build_bot():
 
 
 # =================================================
-# FLASK + BOT RUNNER
+# FLASK
 # =================================================
 
 def run_flask():
     port = int(os.environ.get("PORT", "8000"))
     flask_app.run(host="0.0.0.0", port=port)
 
+
+# =================================================
+# MAIN
+# =================================================
 
 def main():
     load_dotenv()
