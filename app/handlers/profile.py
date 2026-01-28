@@ -4,12 +4,16 @@ from telegram.ext import ContextTypes
 from app.handlers.common import banned_guard
 from app.services.user_service import get_user
 from app.services.premium_service import user_has_premium
-from app.keyboard import edit_profile_kb
+from app.keyboard import (
+    edit_profile_kb,
+    genders_kb,
+    states_kb
+)
 from app.services.log_service import log_group1
 
 
 # -------------------------------------------------
-# PROFILE TEXT
+# PROFILE VIEW TEXT
 # -------------------------------------------------
 
 def profile_text(u: dict, is_premium: bool) -> str:
@@ -48,11 +52,9 @@ async def edit_profile_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     is_premium = user_has_premium(uid)
 
-    # ✅ Preference button ALWAYS visible
-    # 🔒 Usage restricted in callback (premium check)
     await update.message.reply_text(
         profile_text(u, is_premium),
-        reply_markup=edit_profile_kb(is_premium=True),  # always show
+        reply_markup=edit_profile_kb(is_premium=True),  # 👈 always show preference
         parse_mode="Markdown"
     )
 
@@ -60,3 +62,71 @@ async def edit_profile_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.bot,
         f"✏️ PROFILE EDIT OPENED\nUser: {uid}\nPremium: {is_premium}"
     )
+
+
+# -------------------------------------------------
+# CALLBACK HANDLER (PROFILE BUTTONS)
+# -------------------------------------------------
+
+async def profile_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await banned_guard(update, context):
+        return
+
+    q = update.callback_query
+    await q.answer()
+    uid = q.from_user.id
+    u = get_user(uid)
+
+    if not u:
+        return
+
+    is_premium = user_has_premium(uid)
+
+    # -------- BACK TO PROFILE --------
+    if q.data == "edit:back":
+        await q.message.reply_text(
+            profile_text(u, is_premium),
+            reply_markup=edit_profile_kb(is_premium=True),
+            parse_mode="Markdown"
+        )
+        return
+
+    # -------- EDIT GENDER --------
+    if q.data == "edit:gender":
+        await q.message.reply_text(
+            "👤 Select your gender:",
+            reply_markup=genders_kb(edit=True)
+        )
+        return
+
+    # -------- EDIT AGE --------
+    if q.data == "edit:age":
+        context.user_data["edit_age"] = True
+        await q.message.reply_text("🎂 Enter your new age:")
+        return
+
+    # -------- EDIT STATE --------
+    if q.data == "edit:state":
+        await q.message.reply_text(
+            "🌍 Select your state:",
+            reply_markup=states_kb(edit=True)
+        )
+        return
+
+    # -------- EDIT PREFERENCE (PREMIUM ONLY) --------
+    if q.data == "edit:preference":
+        if not is_premium:
+            await q.message.reply_text(
+                "🔒 *Premium Feature*\n\n"
+                "Partner preference is available only for 💎 Premium users.\n"
+                "Upgrade to unlock ❤️",
+                parse_mode="Markdown"
+            )
+            return
+
+        await q.message.reply_text(
+            "⭐ *Partner Preference*\n\n"
+            "Preference setup coming soon 😍",
+            parse_mode="Markdown"
+        )
+        return
