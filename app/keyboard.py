@@ -62,16 +62,34 @@ def choose_again_kb():
 def edit_profile_kb(is_premium: bool):
     rows = [
         [InlineKeyboardButton("👤 Edit Gender", callback_data="edit:gender")],
-        [InlineKeyboardButton("📅 Edit Age", callback_data="edit:age")],
-        [InlineKeyboardButton("🌍 Edit State", callback_data="edit:state")]
+        [InlineKeyboardButton("🎂 Edit Age", callback_data="edit:age")],
+        [InlineKeyboardButton("🌍 Edit State", callback_data="edit:state")],
+        [InlineKeyboardButton("⭐ Partner Preference", callback_data="edit:preference")]
     ]
-
-    if is_premium:
-        rows.append(
-            [InlineKeyboardButton("⭐ Partner Preference", callback_data="edit:preference")]
-        )
-
     return InlineKeyboardMarkup(rows)
+
+
+def edit_age_kb():
+    rows = []
+    for i in range(11, 81, 10):
+        row = []
+        for j in range(i, min(i + 10, 81)):
+            row.append(
+                InlineKeyboardButton(str(j), callback_data=f"edit_age:{j}")
+            )
+        rows.append(row)
+
+    rows.append([InlineKeyboardButton("⬅️ Back", callback_data="edit:back")])
+    return InlineKeyboardMarkup(rows)
+
+
+def preference_kb():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("👩‍❤️‍👨 Gender", callback_data="pref:gender")],
+        [InlineKeyboardButton("🎉 Age", callback_data="pref:age")],
+        [InlineKeyboardButton("🎲 Random", callback_data="pref:random")],
+        [InlineKeyboardButton("⬅️ Back", callback_data="edit:back")]
+    ])
 
 
 # =================================================
