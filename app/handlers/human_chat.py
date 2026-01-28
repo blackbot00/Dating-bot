@@ -165,7 +165,6 @@ async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             remove_from_queue(cid)
             create_chat(uid, cid)
 
-            # increment only for the user (not partner)
             human_increment(uid)
 
             partner = get_user(cid)
@@ -221,7 +220,7 @@ async def human_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -------------------------------------------------
-# TEXT HANDLER
+# TEXT HANDLER  ✅ FIXED
 # -------------------------------------------------
 
 async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -229,9 +228,13 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     uid = update.effective_user.id
+    user = get_user(uid)
+
     partner_id = get_partner(uid)
     if not partner_id:
         return
+
+    partner = get_user(partner_id)
 
     text = (update.message.text or "").strip()
     if not text:
@@ -239,11 +242,29 @@ async def human_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if LINK_REGEX.search(text):
         await update.message.reply_text("🚫 Links are restricted 🥸")
-        await log_group2(context.bot, f"🚫 LINK BLOCKED\nFrom: {uid}\n{text}")
+        await log_group2(
+            context.bot,
+            f"🚫 LINK BLOCKED\nFrom: {uid}\n{text}"
+        )
         return
 
-    await context.bot.send_message(chat_id=partner_id, text=text)
-    await log_group2(context.bot, f"💬 CHAT\n{uid} → {partner_id}")
+    # ✅ Send message to partner
+    await context.bot.send_message(
+        chat_id=partner_id,
+        text=text
+    )
+
+    # ✅ GROUP 2 LOG (REQUIRED FORMAT)
+    time_str = datetime.utcnow().strftime("%I:%M %p")
+
+    log_text = (
+        f"[{time_str}] "
+        f"{user.get('name','User')}({uid}) ➜ "
+        f"{partner.get('name','User')}({partner_id})\n"
+        f"💬 {text}"
+    )
+
+    await log_group2(context.bot, log_text)
 
 
 # -------------------------------------------------
