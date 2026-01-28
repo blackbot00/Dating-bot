@@ -12,11 +12,25 @@ from telegram.ext import (
 from app.config import BOT_TOKEN
 from app.web_server import app as flask_app
 
+# -------- Handlers --------
 from app.handlers.start import start_cmd
 from app.handlers.chat import chat_cmd
-from app.handlers.register import reg_callback
-from app.handlers.ai_chat import ai_callbacks
-from app.handlers.human_chat import human_callbacks, human_media
+from app.handlers.exit_cmd import exit_cmd
+
+from app.handlers.register import reg_callback, reg_age_text
+from app.handlers.profile import edit_profile_cmd, profile_callbacks
+
+from app.handlers.human_chat import (
+    human_callbacks,
+    human_text,
+    human_media
+)
+
+from app.handlers.ai_chat import (
+    ai_callbacks,
+    ai_text
+)
+
 from app.handlers.admin import (
     about_cmd,
     broadcast_cmd,
@@ -24,18 +38,17 @@ from app.handlers.admin import (
     unban_cmd,
     warn_cmd,
     status_cmd,
-    giveaway_cmd          # ✅ NEW
+    giveaway_cmd
 )
+
 from app.handlers.ai_commands import ai_enable_cmd, ai_disable_cmd
 from app.handlers.router import text_router
-from app.handlers.exit_cmd import exit_cmd
-from app.handlers.profile import edit_profile_cmd
 
 
 def build_bot():
     bot = Application.builder().token(BOT_TOKEN).build()
 
-    # ---------------- User commands ----------------
+    # ================= USER COMMANDS =================
     bot.add_handler(CommandHandler("start", start_cmd))
     bot.add_handler(CommandHandler("chat", chat_cmd))
     bot.add_handler(CommandHandler("exit", exit_cmd))
@@ -52,65 +65,68 @@ def build_bot():
         "❓ /help - Help Menu"
     )))
 
-    # ---------------- Privacy ----------------
+    # ================= PRIVACY =================
     bot.add_handler(CommandHandler("privacy", lambda u, c: u.message.reply_text(
         "🔐 *Privacy Policy*\n\n"
-        "1️⃣ 🛡️ *Safety First* — We take user safety seriously.\n"
-        "2️⃣ 😇 *Don't be Misbehave* — Respect others and chat politely.\n"
-        "3️⃣ 🚫 *No Personal Info* — Never share phone, OTP, address, bank details.\n"
-        "4️⃣ 🚩 *Report Option* — Use Report button if someone abuses.\n"
-        "5️⃣ 🔒 *Data Use* — Registration info used only for matching.\n",
+        "• Be respectful\n"
+        "• No personal info sharing\n"
+        "• Use report if needed\n",
         parse_mode="Markdown"
     )))
 
-    # ---------------- Premium info (USER ONLY) ----------------
-    bot.add_handler(CommandHandler("premium", lambda u, c: u.message.reply_text(
-        "💎 *Premium Plans*\n\n"
-        "🗓️ 1 Week  — ₹10\n"
-        "🗓️ 2 Weeks — ₹19\n"
-        "🗓️ 1 Month — ₹35\n\n"
-        "✨ *Premium Benefits*\n"
-        "🤖 Unlimited AI Chat\n"
-        "⚡ Priority Human Matching\n"
-        "🛡️ Safer & Faster Experience\n\n"
-        "📌 *Note:* Premium giveaways & payments handled by Admin.\n",
-        parse_mode="Markdown"
-    )))
-
-    # ---------------- Admin commands ----------------
+    # ================= ADMIN =================
     bot.add_handler(CommandHandler("about", about_cmd))
     bot.add_handler(CommandHandler("status", status_cmd))
-    bot.add_handler(CommandHandler("giveaway", giveaway_cmd))   # 🎁 NEW
+    bot.add_handler(CommandHandler("giveaway", giveaway_cmd))
     bot.add_handler(CommandHandler("broadcast", broadcast_cmd))
     bot.add_handler(CommandHandler("ban", ban_cmd))
     bot.add_handler(CommandHandler("unban", unban_cmd))
     bot.add_handler(CommandHandler("warn", warn_cmd))
 
-    # ---------------- AI admin control ----------------
+    # ================= AI ADMIN =================
     bot.add_handler(CommandHandler("ai_enable", ai_enable_cmd))
     bot.add_handler(CommandHandler("ai_disable", ai_disable_cmd))
 
-    # ---------------- Callbacks ----------------
+    # ================= CALLBACKS =================
+
+    # Registration
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
 
+    # Profile edit buttons
+    bot.add_handler(CallbackQueryHandler(profile_callbacks, pattern=r"^edit:"))
+
+    # AI buttons
     bot.add_handler(CallbackQueryHandler(
         ai_callbacks,
         pattern=r"^(chat_choice:ai|ai_lang:.*|ai_style:.*|ai_action:.*)$"
     ))
 
+    # Human chat buttons
     bot.add_handler(CallbackQueryHandler(
         human_callbacks,
         pattern=r"^(chat_choice:human|chat_action:.*|prev_report|prevrep:.*)$"
     ))
 
-    # ---------------- Media ----------------
+    # ================= MESSAGE HANDLERS =================
+
+    # Registration age input
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text))
+
+    # AI chat text
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_text))
+
+    # Human chat text
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, human_text))
+
+    # Human media
     bot.add_handler(MessageHandler(
-        (filters.PHOTO | filters.VIDEO | filters.Document.ALL | filters.AUDIO |
-         filters.VOICE | filters.VIDEO_NOTE | filters.Sticker.ALL | filters.ANIMATION),
+        filters.PHOTO | filters.VIDEO | filters.Document.ALL |
+        filters.AUDIO | filters.VOICE | filters.VIDEO_NOTE |
+        filters.Sticker.ALL | filters.ANIMATION,
         human_media
     ))
 
-    # ---------------- Text router ----------------
+    # Fallback router (keep LAST)
     bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
     return bot
