@@ -2,9 +2,11 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from app.constants import STATES, AI_STYLES
 
 
-# ---------- Registration ----------
+# =================================================
+# REGISTRATION
+# =================================================
 
-def states_kb(edit=False):
+def states_kb(edit: bool = False):
     prefix = "edit_state" if edit else "reg_state"
 
     rows = []
@@ -18,11 +20,13 @@ def states_kb(edit=False):
                 )
             )
         rows.append(row)
+
     return InlineKeyboardMarkup(rows)
 
 
-def genders_kb(edit=False):
+def genders_kb(edit: bool = False):
     prefix = "edit_gender" if edit else "reg_gender"
+
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("Male", callback_data=f"{prefix}:Male")],
         [InlineKeyboardButton("Female", callback_data=f"{prefix}:Female")],
@@ -30,7 +34,9 @@ def genders_kb(edit=False):
     ])
 
 
-# ---------- Main Chat Choice (NO edit profile here) ----------
+# =================================================
+# MAIN CHAT MENU
+# =================================================
 
 def choose_chat_kb():
     return InlineKeyboardMarkup([
@@ -49,7 +55,9 @@ def choose_again_kb():
     ])
 
 
-# ---------- Profile Edit ----------
+# =================================================
+# PROFILE EDIT
+# =================================================
 
 def edit_profile_kb(is_premium: bool):
     rows = [
@@ -66,7 +74,9 @@ def edit_profile_kb(is_premium: bool):
     return InlineKeyboardMarkup(rows)
 
 
-# ---------- Previous Report ----------
+# =================================================
+# PREVIOUS CHAT REPORT
+# =================================================
 
 def prev_report_reason_kb():
     return InlineKeyboardMarkup([
@@ -78,7 +88,9 @@ def prev_report_reason_kb():
     ])
 
 
-# ---------- AI CHAT ----------
+# =================================================
+# AI CHAT
+# =================================================
 
 def ai_language_kb():
     return InlineKeyboardMarkup([
@@ -111,7 +123,9 @@ def ai_exit_kb():
     ])
 
 
-# ---------- Human Chat ----------
+# =================================================
+# HUMAN CHAT
+# =================================================
 
 def inchat_kb():
     return InlineKeyboardMarkup([
