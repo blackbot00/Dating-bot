@@ -67,26 +67,36 @@ def edit_profile_kb(is_premium: bool):
         [InlineKeyboardButton("⭐ Partner Preference", callback_data="edit:preference")]
     ]
     return InlineKeyboardMarkup(rows)
+    
 
-
-def edit_age_kb():
+def age_kb_edit(min_age: int = 11, max_age: int = 80, cols: int = 6):
+    """
+    Creates compact age selection keyboard
+    Example: 6 columns × ~12 rows
+    """
     rows = []
+    row = []
 
-    col1 = list(range(11, 81))
-    col2 = list(range(21, 91))
+    for age in range(min_age, max_age + 1):
+        row.append(
+            InlineKeyboardButton(
+                str(age),
+                callback_data=f"edit_age:{age}"
+            )
+        )
 
-    for a, b in zip(col1, col2):
-        if b > 80:
-            rows.append([
-                InlineKeyboardButton(str(a), callback_data=f"edit_age:{a}")
-            ])
-        else:
-            rows.append([
-                InlineKeyboardButton(str(a), callback_data=f"edit_age:{a}"),
-                InlineKeyboardButton(str(b), callback_data=f"edit_age:{b}")
-            ])
+        if len(row) == cols:
+            rows.append(row)
+            row = []
 
-    rows.append([InlineKeyboardButton("⬅️ Back", callback_data="edit:back")])
+    if row:
+        rows.append(row)
+
+    # Back button
+    rows.append(
+        [InlineKeyboardButton("⬅️ Back", callback_data="edit:back")]
+    )
+
     return InlineKeyboardMarkup(rows)
 
 
