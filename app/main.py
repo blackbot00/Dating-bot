@@ -119,44 +119,40 @@ def build_bot():
 
     # ================= MESSAGE HANDLERS =================
 
-    # 🔴 IMPORTANT ORDER 🔴
+# Registration age input
+bot.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text)
+)
 
-    # Registration age input (ONLY when in ASK_AGE state)
-    bot.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text)
+# 🔥 HUMAN CHAT TEXT — MUST BE FIRST
+bot.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, human_text)
+)
+
+# AI chat text
+bot.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, ai_text)
+)
+
+# Human media
+bot.add_handler(
+    MessageHandler(
+        filters.PHOTO
+        | filters.VIDEO
+        | filters.Document.ALL
+        | filters.AUDIO
+        | filters.VOICE
+        | filters.VIDEO_NOTE
+        | filters.Sticker.ALL
+        | filters.ANIMATION,
+        human_media
     )
+)
 
-    # AI chat text (ONLY when ai_mode = True)
-    bot.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, ai_text)
-    )
-
-    # Human chat text (ONLY when user in active chat)
-    bot.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, human_text)
-    )
-
-    # Human media
-    bot.add_handler(
-        MessageHandler(
-            filters.PHOTO
-            | filters.VIDEO
-            | filters.Document.ALL
-            | filters.AUDIO
-            | filters.VOICE
-            | filters.VIDEO_NOTE
-            | filters.Sticker.ALL
-            | filters.ANIMATION,
-            human_media
-        )
-    )
-
-    # Fallback router (ALWAYS LAST)
-    bot.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, text_router)
-    )
-
-    return bot
+# 🔴 Fallback router — ALWAYS LAST
+bot.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, text_router)
+)
 
 
 # =================================================
