@@ -1,28 +1,36 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from app.handlers.common import banned_guard
 from app.db import user_state_col
 from app.states import ASK_AGE
-from app.handlers.register import reg_age_text
-from app.handlers.ai_chat import ai_text
-from app.handlers.human_chat import human_text
 from app.services.user_service import get_user
+from app.services.match_service import is_in_chat
 
 
 async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await banned_guard(update, context):
+        return
+
     uid = update.effective_user.id
 
-    # 1) Registration age step
+    # 1️⃣ Registration age step → let reg_age_text handle it
     st = user_state_col.find_one({"_id": uid})
     if st and st.get("step") == ASK_AGE:
-        await reg_age_text(update, context)
+        return  # reg_age_text already handled by its own MessageHandler
+
+    # 2️⃣ If user is in HUMAN chat → DO NOTHING
+    # human_text MessageHandler will forward message + log group2
+    if is_in_chat(uid):
         return
 
-    # 2) AI mode
+    # 3️⃣ If user is in AI mode → DO NOTHING
+    # ai_text MessageHandler will handle it
     u = get_user(uid)
     if u and u.get("ai_mode"):
-        await ai_text(update, context)
         return
 
-    # 3) Human chat relay
-    await human_text(update, context)
+    # 4️⃣ Fallback message (idle user)
+    await update.message.reply_text(
+        "ℹ️ Use /chat to start chatting 😊"
+    )
