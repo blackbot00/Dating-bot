@@ -48,7 +48,6 @@ from app.handlers.router import text_router
 # =================================================
 # BUILD BOT
 # =================================================
-
 def build_bot():
     bot = Application.builder().token(BOT_TOKEN).build()
 
@@ -57,26 +56,6 @@ def build_bot():
     bot.add_handler(CommandHandler("chat", chat_cmd))
     bot.add_handler(CommandHandler("exit", exit_cmd))
     bot.add_handler(CommandHandler("edit_profile", edit_profile_cmd))
-
-    bot.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(
-        "📌 Commands:\n\n"
-        "✅ /start - Register / Open Menu\n"
-        "💬 /chat - Choose Human / AI\n"
-        "🛑 /exit - Stop conversation\n"
-        "✏️ /edit_profile - Edit your profile\n"
-        "🔐 /privacy - Privacy Policy\n"
-        "💎 /premium - Premium Plans\n"
-        "❓ /help - Help Menu"
-    )))
-
-    # ================= PRIVACY =================
-    bot.add_handler(CommandHandler("privacy", lambda u, c: u.message.reply_text(
-        "🔐 *Privacy Policy*\n\n"
-        "• Be respectful\n"
-        "• No personal info sharing\n"
-        "• Use report if needed\n",
-        parse_mode="Markdown"
-    )))
 
     # ================= ADMIN =================
     bot.add_handler(CommandHandler("about", about_cmd))
@@ -92,16 +71,12 @@ def build_bot():
     bot.add_handler(CommandHandler("ai_disable", ai_disable_cmd))
 
     # ================= CALLBACKS =================
-
-    # Registration buttons
     bot.add_handler(CallbackQueryHandler(reg_callback, pattern=r"^reg_"))
 
-    # Profile edit + preference buttons
     bot.add_handler(
         CallbackQueryHandler(profile_callbacks, pattern=r"^(edit:|edit_|pref:)")
     )
 
-    # AI buttons
     bot.add_handler(
         CallbackQueryHandler(
             ai_callbacks,
@@ -109,7 +84,6 @@ def build_bot():
         )
     )
 
-    # Human chat buttons
     bot.add_handler(
         CallbackQueryHandler(
             human_callbacks,
@@ -119,46 +93,39 @@ def build_bot():
 
     # ================= MESSAGE HANDLERS =================
 
-# Registration age input
-bot.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text)
-)
+    # Registration age
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reg_age_text))
 
-# 🔥 HUMAN CHAT TEXT — MUST BE FIRST
-bot.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, human_text)
-)
+    # AI chat
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_text))
 
-# AI chat text
-bot.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, ai_text)
-)
+    # Human chat
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, human_text))
 
-# Human media
-bot.add_handler(
-    MessageHandler(
-        filters.PHOTO
-        | filters.VIDEO
-        | filters.Document.ALL
-        | filters.AUDIO
-        | filters.VOICE
-        | filters.VIDEO_NOTE
-        | filters.Sticker.ALL
-        | filters.ANIMATION,
-        human_media
+    # Human media
+    bot.add_handler(
+        MessageHandler(
+            filters.PHOTO
+            | filters.VIDEO
+            | filters.Document.ALL
+            | filters.AUDIO
+            | filters.VOICE
+            | filters.VIDEO_NOTE
+            | filters.Sticker.ALL
+            | filters.ANIMATION,
+            human_media
+        )
     )
-)
 
-# 🔴 Fallback router — ALWAYS LAST
-bot.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, text_router)
-)
+    # Router MUST be last
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+
+    return bot
 
 
 # =================================================
 # FLASK
 # =================================================
-
 def run_flask():
     port = int(os.environ.get("PORT", "8000"))
     flask_app.run(host="0.0.0.0", port=port)
@@ -167,7 +134,6 @@ def run_flask():
 # =================================================
 # MAIN
 # =================================================
-
 def main():
     load_dotenv()
 
